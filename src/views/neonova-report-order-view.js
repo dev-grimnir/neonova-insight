@@ -98,6 +98,12 @@ class NeonovaReportOrderView extends BaseNeonovaView {
                     <button class="quick-btn px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl text-sm transition flex items-center gap-2 shadow-md" data-days="1">
                         <i class="fas fa-calendar-day"></i> Last 1 day
                     </button>
+                    <button class="quick-btn px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl text-sm transition flex items-center gap-2 shadow-md" data-days="2">
+                        <i class="fas fa-calendar-day"></i> Last 2 days
+                    </button>
+                    <button class="quick-btn px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl text-sm transition flex items-center gap-2 shadow-md" data-days="3">
+                        <i class="fas fa-calendar-day"></i> Last 3 days
+                    </button>    
                     <button class="quick-btn px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl text-sm transition flex items-center gap-2 shadow-md" data-days="7">
                         <i class="fas fa-calendar-week"></i> Last 7 days
                     </button>
@@ -242,7 +248,7 @@ class NeonovaReportOrderView extends BaseNeonovaView {
         // Quick preset buttons — dispatch constant
         this.container.querySelectorAll('.quick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const days = btn.dataset.days;  // "1", "7", "30", "90"
+                const days = btn.dataset.days;  // "1", "2", "3", "7", "30", "90"
                 const constant = `${days}_DAYS`;  // e.g. "7_DAYS"
                 this.dispatchEvent(new CustomEvent('quickReportRequested', {
                     detail: { timeframe: constant }

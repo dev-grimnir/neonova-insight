@@ -73,7 +73,6 @@ class NeonovaAnalyzer {
         }
 
         if (input.cleanedEntries !== undefined) {
-            console.log(`[Report] Extracted ${input.cleanedEntries.length} cleaned entries from stats object`);
             return {
                 entries: input.cleanedEntries,
                 totalProcessed: input.totalProcessed || input.cleanedEntries.length,
@@ -526,12 +525,6 @@ class NeonovaAnalyzer {
 
         disconnectDates.sort((a, b) => a - b);
 
-        console.log('[Rolling Debug] Input:', {
-            disconnectCount: disconnectDates.length,
-            firstDate: firstDate?.toISOString(),
-            lastDate: lastDate?.toISOString()
-        });
-
         const rolling7Day = [];
         const rollingLabels = [];
         const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
@@ -546,12 +539,6 @@ class NeonovaAnalyzer {
             rollingLabels.push(currentDate.toLocaleDateString());
             currentDate = new Date(currentDate.getTime() + 24*60*60*1000);
         }
-
-        console.log('[Rolling Debug] Output sample:', {
-                labelsCount: rollingLabels.length,
-                dataSample: rolling7Day.slice(0, 5),  // first 5 values
-                labelsSample: rollingLabels.slice(0, 5)
-            });
         
         return { rolling7Day, rollingLabels };
     }
