@@ -126,11 +126,13 @@ class NeonovaDashboardController {
     }
     
     async save() {
-        if (!this.customers.length) {
-            localStorage.removeItem('novaDashboardCustomers');
-            console.log('save: removed empty list');
+        console.log('save called — length:', this.customers ? this.customers.length : 'undefined');
+    
+        if (!this.customers || this.customers.length === 0) {
+            console.log('save: length 0 — SKIPPING remove (protecting data)');
             return;
         }
+    
         const jsonStr = JSON.stringify(this.customers);
     
         if (!masterKey) {
@@ -140,7 +142,7 @@ class NeonovaDashboardController {
         }
     
         try {
-            const encrypted = await encryptData(jsonStr);   // ← fixed (no second arg)
+            const encrypted = await encryptData(jsonStr);
             localStorage.setItem('novaDashboardCustomers', encrypted);
             console.log('save: ENCRYPTED and saved successfully');
         } catch (e) {
