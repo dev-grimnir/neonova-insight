@@ -1,6 +1,9 @@
 class NeonovaDashboardController {
     constructor() {
-        this.customers = this.load();
+        this.masterPassphrase = null;   
+        this.customers = [];            
+        this.initAsync();               
+        this.customers = await this.load();
         this.pollingIntervalMinutes = 5;
         this.pollIntervalMs = 5 * 60 * 1000;
         this.pollInterval = null;  
@@ -45,6 +48,56 @@ class NeonovaDashboardController {
         this.view?.render();  // Refresh UI to show pause/resume state
     }
 
+    async initAsync() {
+        this.masterPassphrase = prompt("Enter encryption passphrase (or leave blank to disable):");
+        if (!this.masterPassphrase) {
+            console.warn("Encryption disabled – using plaintext storage");
+            this.masterPassphrase = null;
+        }
+        this.customers = await await this.load();
+        this.startPolling();            // now safe to start
+        if (this.view) this.view.render();
+    }
+
+    async load() {
+        const data = localStorage.getItem('novaDashboardCustomers');
+        if (!data) return [];
+        if (!this.masterPassphrase) {
+            // fallback plaintext for dev / users who disabled
+            try {
+                return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c));
+            } catch { return []; }
+        }
+        try {
+            const jsonStr = await decryptData(data, this.masterPassphrase);
+            return JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
+        } catch (e) {
+            console.error("Decryption failed – wrong passphrase or corrupted data");
+            alert("Decryption failed. Clearing storage.");
+            localStorage.removeItem('novaDashboardCustomers');
+            return [];
+        }
+    }
+
+    async save() {
+        if (!this.customers.length) {
+            localStorage.removeItem('novaDashboardCustomers');
+            return;
+        }
+        const jsonStr = JSON.stringify(this.customers); // uses Customer.toJSON() automatically
+        if (!this.masterPassphrase) {
+            localStorage.setItem('novaDashboardCustomers', jsonStr);
+            return;
+        }
+        try {
+            const encrypted = await encryptData(jsonStr, this.masterPassphrase);
+            localStorage.setItem('novaDashboardCustomers', encrypted);
+        } catch (e) {
+            console.error("Encryption failed", e);
+        }
+    }
+
+    /*
     load() {
         const data = localStorage.getItem('novaDashboardCustomers');
         if (!data) return [];
@@ -54,10 +107,12 @@ class NeonovaDashboardController {
             return [];
         }
     }
+    
 
     save() {
         localStorage.setItem('novaDashboardCustomers', JSON.stringify(this.customers));
     }
+    */
 
     add(radiusUsername, friendlyName) {
         if (!radiusUsername?.trim()) {
@@ -68,16 +123,18 @@ class NeonovaDashboardController {
             return;
         }
         this.customers.push(new Customer(radiusUsername, friendlyName));
-        this.save();
+        await this.save();
         if (this.view) this.view.render();
         this.poll();  // Immediate update for the new customer
     }
 
     remove(radiusUsername) {
         this.customers = this.customers.filter(c => c.radiusUsername !== radiusUsername);
-        this.save();
+        await this.save();
         if (this.view) this.view.render();
     }
+
+    
 
     async poll() {
         if (this.isPollingPaused) {
@@ -95,7 +152,7 @@ class NeonovaDashboardController {
             }
         }
     
-        this.save();
+        await this.save();
         if (this.view) this.view.render();
         if (pollStatusEl) pollStatusEl.textContent = 'Last update: ' + new Date().toLocaleTimeString();
     }
