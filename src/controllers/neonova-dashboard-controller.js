@@ -114,7 +114,7 @@ class NeonovaDashboardController {
     }
     */
 
-    add(radiusUsername, friendlyName) {
+    async add(radiusUsername, friendlyName) {
         if (!radiusUsername?.trim()) {
             return;
         }
@@ -128,7 +128,7 @@ class NeonovaDashboardController {
         this.poll();  // Immediate update for the new customer
     }
 
-    remove(radiusUsername) {
+    async remove(radiusUsername) {
         this.customers = this.customers.filter(c => c.radiusUsername !== radiusUsername);
         await this.save();
         if (this.view) this.view.render();
