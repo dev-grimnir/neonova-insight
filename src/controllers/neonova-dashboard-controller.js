@@ -1,9 +1,9 @@
 class NeonovaDashboardController {
     constructor() {
         this.masterPassphrase = null;   
-        this.customers = [];            
+        this.customers = [];   
+        this._initialized = false;
         this.initAsync();               
-        //this.customers = await this.load();
         this.pollingIntervalMinutes = 5;
         this.pollIntervalMs = 5 * 60 * 1000;
         this.pollInterval = null;  
