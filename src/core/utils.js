@@ -100,3 +100,24 @@ async function decryptData(encryptedB64, passphrase) {
 window.addEventListener('beforeunload', function() {
     masterKey = null;
 });
+
+// === REMEMBERED KEY (persistent across reloads) ===
+async function loadRememberedMasterKey() {
+    const stored = localStorage.getItem('novaDashboardMasterKey');
+    if (!stored) return null;
+    try {
+        const raw = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+        return await crypto.subtle.importKey(
+            "raw", raw, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+        );
+    } catch (e) {
+        localStorage.removeItem('novaDashboardMasterKey');
+        return null;
+    }
+}
+
+async function saveRememberedMasterKey(key) {
+    const raw = await crypto.subtle.exportKey("raw", key);
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
+    localStorage.setItem('novaDashboardMasterKey', b64);
+}
