@@ -2,9 +2,9 @@
 
 A powerful Tampermonkey userscript suite for NeoNova admins (`admin.neonova.net`). 
 
-**Real-time customer monitoring + professional stability reports** with live polling, one-click customer addition, dual stability scores, rolling 7-day charts, and exports.
+**Real-time customer monitoring + professional stability reports** with live polling, two-click customer addition, dual stability scores, rolling 7-day charts, and exports.
 
-Built for field techs and small ISPs who need better visibility into modem flaps, uptime, and reconnect behavior.
+Built for admins, field techs, and small ISPs who need better visibility into modem flaps, uptime, and reconnect behavior.
 
 ![Dashboard Screenshot](https://github.com/dev-grimnir/neonova-post-processor/blob/dev/screenshots/dashboard-ss.png)
 *(Live dashboard with polling controls, status table, and Add Customer modal)*
@@ -42,26 +42,41 @@ Or view the raw HTML directly:
 
 ### Under the Hood
 - Fully refactored `NeonovaAnalyzer` (clean private helpers, heavily commented)
-- Stress-tested on massive admin accounts
+- Stress-tested on massive accounts with over 100k results in one report
 - Zero console errors on normal use
 
 ## Security & Data Handling
 
-This is a purely client-side Tampermonkey userscript that runs exclusively in the browser on `admin.neonova.net`. No data is ever sent to external servers.
+This is a **client-side Tampermonkey userscript** designed to make life easier for NeoNova administrators. It runs **entirely inside your browser** on `admin.neonova.net` and does nothing unless you are actively logged in.
 
-- **All persistent data is encrypted on disk**  
-  The only data stored between sessions is the list of monitored customers (usernames, friendly names, latest status) in `localStorage` under the key `novaDashboardCustomers`.  
-  This data is **fully AES-256-GCM encrypted** using the Web Crypto API. Encryption is applied immediately before saving and decryption immediately after loading.  
-  - On first use: User enters a passphrase (or leaves blank to disable encryption).  
-  - The derived key is remembered on the device (stored securely in localStorage) for zero-prompt subsequent loads.  
-  - If encryption is disabled: data is stored in plaintext (useful for testing/dev).  
-  - All in-memory processing (live polling, report generation) remains unencrypted for performance, as the data is already accessible in browser memory during runtime.
+### Why it can process large datasets quickly (and why that's not scary)
+The script can generate reports that pull and analyze hundreds of thousands of RADIUS log entries in hours rather than days simply because it automates the exact same actions you already perform manually in the admin portal.  
+- It uses the **exact same pagination endpoints** the official web UI already exposes.  
+- Everything (fetching, cleaning, and calculating metrics) happens locally in your browser using standard JavaScript.  
+- It does **not** bypass any rate limits, does **not** use hidden APIs, and does **not** create any extra load on the server beyond what a human clicking through pages would generate.  
+In short: it just saves you from having to sit there clicking “Next” for 45 minutes.
 
-No historical RADIUS logs or generated reports are ever persisted automatically — they only exist in memory during the session and are exported manually by the user (HTML/CSV/PDF downloads).
+### Authentication & Access
+- The script **cannot function at all** without an active, 2FA-verified session on the NeoNova admin portal.  
+- It never stores, transmits, or interacts with passwords, 2FA tokens, or any credentials.  
+- It performs only actions that the currently logged-in user is already authorized to do through the normal web interface.
 
-For maximum security:  
-- Use a strong passphrase.  
-- To force a re-prompt or clear the key: run `localStorage.removeItem('novaDashboardMasterKey')` in the browser console.
+### Data Access
+- The script only reads and processes data that is already visible or exportable in the standard NeoNova admin UI while you are logged in.  
+- No additional privileges are requested or used.
+
+### Persistent Storage (Encrypted)
+- The **only** data saved between sessions is your personal list of monitored customers (usernames, friendly names, and latest status).  
+- This data is stored in the browser’s `localStorage` and is **fully AES-256-GCM encrypted** on disk using the Web Crypto API.  
+- On first use you set a passphrase (or leave it blank to disable encryption). The key is remembered securely on your device for zero-prompt future visits.  
+- To force a re-prompt or wipe the key at any time: run `localStorage.removeItem('novaDashboardMasterKey')` in the console.
+
+### No Persistent Logs or Reports
+Historical RADIUS data and generated reports exist **only in memory** while the dashboard or report modal is open. They are never automatically saved to disk — you must explicitly export them (HTML/CSV/PDF) if needed.
+
+The script does not run in the background, does not contact any external servers, and does not perform any actions outside of an active authenticated session.
+
+If you have any security, compliance, or operational questions, feel free to reach out — we’re happy to walk through anything.
 
 ## Installation
 
