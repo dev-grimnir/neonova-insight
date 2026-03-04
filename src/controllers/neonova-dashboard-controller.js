@@ -1,9 +1,9 @@
 class NeonovaDashboardController {
     constructor() {
         this.masterPassphrase = null;   
-        this.customers = [];            
+        this.customers = [];   
+        this._initialized = false;
         this.initAsync();               
-        //this.customers = await this.load();
         this.pollingIntervalMinutes = 5;
         this.pollIntervalMs = 5 * 60 * 1000;
         this.pollInterval = null;  
@@ -48,72 +48,6 @@ class NeonovaDashboardController {
         this.view?.render();  // Refresh UI to show pause/resume state
     }
 
-    async initAsync() {
-        this.masterPassphrase = prompt("Enter encryption passphrase (or leave blank to disable):");
-        if (!this.masterPassphrase) {
-            console.warn("Encryption disabled – using plaintext storage");
-            this.masterPassphrase = null;
-        }
-        this.customers = await await this.load();
-        this.startPolling();            // now safe to start
-        if (this.view) this.view.render();
-    }
-
-    async load() {
-        const data = localStorage.getItem('novaDashboardCustomers');
-        if (!data) return [];
-        if (!this.masterPassphrase) {
-            // fallback plaintext for dev / users who disabled
-            try {
-                return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c));
-            } catch { return []; }
-        }
-        try {
-            const jsonStr = await decryptData(data, this.masterPassphrase);
-            return JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
-        } catch (e) {
-            console.error("Decryption failed – wrong passphrase or corrupted data");
-            alert("Decryption failed. Clearing storage.");
-            localStorage.removeItem('novaDashboardCustomers');
-            return [];
-        }
-    }
-
-    async save() {
-        if (!this.customers.length) {
-            localStorage.removeItem('novaDashboardCustomers');
-            return;
-        }
-        const jsonStr = JSON.stringify(this.customers); // uses Customer.toJSON() automatically
-        if (!this.masterPassphrase) {
-            localStorage.setItem('novaDashboardCustomers', jsonStr);
-            return;
-        }
-        try {
-            const encrypted = await encryptData(jsonStr, this.masterPassphrase);
-            localStorage.setItem('novaDashboardCustomers', encrypted);
-        } catch (e) {
-            console.error("Encryption failed", e);
-        }
-    }
-
-    /*
-    load() {
-        const data = localStorage.getItem('novaDashboardCustomers');
-        if (!data) return [];
-        try {
-            return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c));
-        } catch {
-            return [];
-        }
-    }
-    
-
-    save() {
-        localStorage.setItem('novaDashboardCustomers', JSON.stringify(this.customers));
-    }
-    */
-
     async add(radiusUsername, friendlyName) {
         if (!radiusUsername?.trim()) {
             return;
@@ -134,7 +68,87 @@ class NeonovaDashboardController {
         if (this.view) this.view.render();
     }
 
+    async initAsync() {
+    console.log('=== initAsync called ===');
+    if (this._initialized) {
+        console.log('initAsync already ran — skipping duplicate call');
+        return;
+    }
+    this._initialized = true;
+
+    let rememberedKey = await loadRememberedMasterKey();
+    if (rememberedKey) {
+        masterKey = { key: rememberedKey, salt: null };
+        console.log('🔑 Remembered key LOADED successfully');
+    } else {
+        const passphrase = prompt("Enter encryption passphrase for customer list:\n(Leave blank to disable)", "");
+        if (!passphrase?.trim()) {
+            console.warn("🔓 Encryption disabled – plaintext mode");
+        } else {
+            const { key, salt } = await deriveKey(passphrase);
+            masterKey = { key, salt };
+            await saveRememberedMasterKey(key);
+            console.log('🔑 New key created and SAVED to localStorage');
+        }
+    }
+
+    this.customers = await this.load();
+    this.startPolling();
+    if (this.view) this.view.render();
+    console.log('initAsync finished — customers length:', this.customers.length);
+}
+
+    async load() {
+        const data = localStorage.getItem('novaDashboardCustomers');
+        if (!data) {
+            console.log('load: no data in localStorage');
+            return [];
+        }
     
+        if (!masterKey) {
+            console.log('load: plaintext fallback');
+            try { return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c)); }
+            catch { return []; }
+        }
+    
+        try {
+            const jsonStr = await decryptData(data);
+            const customers = JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
+            console.log('load: DECRYPTED successfully —', customers.length, 'customers');
+            return customers;
+        } catch (e) {
+            console.error("Decryption failed", e);
+            alert("Decryption failed. Clearing everything.");
+            localStorage.removeItem('novaDashboardCustomers');
+            localStorage.removeItem('novaDashboardMasterKey');
+            return [];
+        }
+    }
+    
+    async save() {
+        console.log('save called — length:', this.customers ? this.customers.length : 'undefined');
+    
+        if (!this.customers || this.customers.length === 0) {
+            console.log('save: length 0 — SKIPPING remove (protecting data)');
+            return;
+        }
+    
+        const jsonStr = JSON.stringify(this.customers);
+    
+        if (!masterKey) {
+            localStorage.setItem('novaDashboardCustomers', jsonStr);
+            console.log('save: plaintext saved');
+            return;
+        }
+    
+        try {
+            const encrypted = await encryptData(jsonStr);
+            localStorage.setItem('novaDashboardCustomers', encrypted);
+            console.log('save: ENCRYPTED and saved successfully');
+        } catch (e) {
+            console.error("Encryption failed", e);
+        }
+    }
 
     async poll() {
         if (this.isPollingPaused) {
