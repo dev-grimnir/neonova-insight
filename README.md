@@ -45,6 +45,24 @@ Or view the raw HTML directly:
 - Stress-tested on massive admin accounts
 - Zero console errors on normal use
 
+## Security & Data Handling
+
+This is a purely client-side Tampermonkey userscript that runs exclusively in the browser on `admin.neonova.net`. No data is ever sent to external servers.
+
+- **All persistent data is encrypted on disk**  
+  The only data stored between sessions is the list of monitored customers (usernames, friendly names, latest status) in `localStorage` under the key `novaDashboardCustomers`.  
+  This data is **fully AES-256-GCM encrypted** using the Web Crypto API. Encryption is applied immediately before saving and decryption immediately after loading.  
+  - On first use: User enters a passphrase (or leaves blank to disable encryption).  
+  - The derived key is remembered on the device (stored securely in localStorage) for zero-prompt subsequent loads.  
+  - If encryption is disabled: data is stored in plaintext (useful for testing/dev).  
+  - All in-memory processing (live polling, report generation) remains unencrypted for performance, as the data is already accessible in browser memory during runtime.
+
+No historical RADIUS logs or generated reports are ever persisted automatically — they only exist in memory during the session and are exported manually by the user (HTML/CSV/PDF downloads).
+
+For maximum security:  
+- Use a strong passphrase.  
+- To force a re-prompt or clear the key: run `localStorage.removeItem('novaDashboardMasterKey')` in the browser console.
+
 ## Installation
 
 1. Install **Tampermonkey** (Chrome / Firefox / Edge).
