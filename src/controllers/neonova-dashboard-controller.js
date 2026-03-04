@@ -48,74 +48,7 @@ class NeonovaDashboardController {
         this.view?.render();  // Refresh UI to show pause/resume state
     }
 
-    async initAsync() {
-        // Try remembered key first (no prompt after first use)
-        let rememberedKey = await loadRememberedMasterKey();
-        if (rememberedKey) {
-            masterKey = { key: rememberedKey, salt: null };
-            console.log("🔑 Using remembered encryption key");
-        } else {
-            const passphrase = prompt("Enter encryption passphrase for customer list:\n(Leave blank to disable)", "");
-            if (!passphrase?.trim()) {
-                console.warn("🔓 Encryption disabled – plaintext mode");
-            } else {
-                const { key, salt } = await deriveKey(passphrase);
-                masterKey = { key, salt };
-                await saveRememberedMasterKey(key);
-                console.log("🔑 Encryption key remembered on this device");
-            }
         }
-    
-        this.customers = await this.load();
-        this.startPolling();
-        if (this.view) this.view.render();
-    }
-    
-    async load() {
-        const data = localStorage.getItem('novaDashboardCustomers');
-        if (!data) return [];
-    
-        if (!masterKey) {
-            // plaintext fallback
-            try { 
-                return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c)); 
-            } catch { 
-                return []; 
-            }
-        }
-    
-        try {
-            const jsonStr = await decryptData(data);
-            return JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
-        } catch (e) {
-            console.error("Decryption failed", e);
-            alert("Decryption failed. Clearing everything.");
-            localStorage.removeItem('novaDashboardCustomers');
-            localStorage.removeItem('novaDashboardMasterKey');
-            return [];
-        }
-    }
-    
-    async save() {
-        if (!this.customers.length) {
-            localStorage.removeItem('novaDashboardCustomers');
-            return;
-        }
-        const jsonStr = JSON.stringify(this.customers);
-    
-        if (!masterKey) {
-            // plaintext fallback
-            localStorage.setItem('novaDashboardCustomers', jsonStr);
-            return;
-        }
-    
-        try {
-            const encrypted = await encryptData(jsonStr);
-            localStorage.setItem('novaDashboardCustomers', encrypted);
-        } catch (e) {
-            console.error("Encryption failed", e);
-        }
-    }
 
     async add(radiusUsername, friendlyName) {
         if (!radiusUsername?.trim()) {
@@ -137,7 +70,85 @@ class NeonovaDashboardController {
         if (this.view) this.view.render();
     }
 
+    async initAsync() {
+    console.log('=== initAsync called ===');
+    if (this._initialized) {
+        console.log('initAsync already ran — skipping duplicate call');
+        return;
+    }
+    this._initialized = true;
+
+    let rememberedKey = await loadRememberedMasterKey();
+    if (rememberedKey) {
+        masterKey = { key: rememberedKey, salt: null };
+        console.log('🔑 Remembered key LOADED successfully');
+    } else {
+        const passphrase = prompt("Enter encryption passphrase for customer list:\n(Leave blank to disable)", "");
+        if (!passphrase?.trim()) {
+            console.warn("🔓 Encryption disabled – plaintext mode");
+        } else {
+            const { key, salt } = await deriveKey(passphrase);
+            masterKey = { key, salt };
+            await saveRememberedMasterKey(key);
+            console.log('🔑 New key created and SAVED to localStorage');
+        }
+    }
+
+    this.customers = await this.load();
+    this.startPolling();
+    if (this.view) this.view.render();
+    console.log('initAsync finished — customers length:', this.customers.length);
+}
+
+    async load() {
+        const data = localStorage.getItem('novaDashboardCustomers');
+        if (!data) {
+            console.log('load: no data in localStorage');
+            return [];
+        }
     
+        if (!masterKey) {
+            console.log('load: plaintext fallback');
+            try { return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c)); }
+            catch { return []; }
+        }
+    
+        try {
+            const jsonStr = await decryptData(data);
+            const customers = JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
+            console.log('load: DECRYPTED successfully —', customers.length, 'customers');
+            return customers;
+        } catch (e) {
+            console.error("Decryption failed", e);
+            alert("Decryption failed. Clearing everything.");
+            localStorage.removeItem('novaDashboardCustomers');
+            localStorage.removeItem('novaDashboardMasterKey');
+            return [];
+        }
+    }
+    
+    async save() {
+        if (!this.customers.length) {
+            localStorage.removeItem('novaDashboardCustomers');
+            console.log('save: removed empty list');
+            return;
+        }
+        const jsonStr = JSON.stringify(this.customers);
+    
+        if (!masterKey) {
+            localStorage.setItem('novaDashboardCustomers', jsonStr);
+            console.log('save: plaintext saved');
+            return;
+        }
+    
+        try {
+            const encrypted = await encryptData(jsonStr);   // ← fixed (no second arg)
+            localStorage.setItem('novaDashboardCustomers', encrypted);
+            console.log('save: ENCRYPTED and saved successfully');
+        } catch (e) {
+            console.error("Encryption failed", e);
+        }
+    }
 
     async poll() {
         if (this.isPollingPaused) {
