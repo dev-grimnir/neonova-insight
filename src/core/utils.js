@@ -48,6 +48,18 @@ async function encryptData(plainText) {
     const enc = new TextEncoder();
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, masterKey.key, enc.encode(plainText));
+
+    const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    derivedKey,
+    new TextEncoder().encode(plainText)
+    );
+    console.log('[encrypt] encryptedBuffer byteLength:', encryptedBuffer.byteLength);
+    
+    if (!encryptedBuffer || encryptedBuffer.byteLength === 0) {
+        throw new Error('subtle.encrypt returned invalid/empty buffer');
+    }
+    
     var salt = masterKey.salt || new Uint8Array(16);
     const combined = new Uint8Array(28 + encrypted.byteLength);
     combined.set(masterKey.salt, 0);
