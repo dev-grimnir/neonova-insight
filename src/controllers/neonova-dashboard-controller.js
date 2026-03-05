@@ -123,11 +123,12 @@ class NeonovaDashboardController {
     async save() {
         console.log('save called — length:', this.customers ? this.customers.length : 'undefined');
     
-        if (!this.customers || this.customers.length === 0) {
-            console.log('save: length 0 — SKIPPING remove (protecting data)');
+        if (!this.customers) {
+            console.log('save: undefined — SKIPPING (protecting data)');
             return;
         }
     
+        // Now always save, even if empty array — this persists intentional removes/clears
         const jsonStr = JSON.stringify(this.customers);
     
         if (!masterKey) {
