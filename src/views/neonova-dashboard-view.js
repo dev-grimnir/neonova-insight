@@ -138,7 +138,7 @@ class NeonovaDashboardView extends BaseNeonovaView{
                 <!-- HEADER -->
                 <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 shrink-0">
                     <div class="flex items-center gap-3">
-                        <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.png" 
+                        <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.jpg" 
                              alt="Nova Subscriber" 
                              class="h-11 w-auto">
                     </div>
