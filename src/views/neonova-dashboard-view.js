@@ -35,7 +35,7 @@ class NeonovaDashboardView extends BaseNeonovaView{
 
         this.minimizeBar.innerHTML = `
             <div class="flex items-center gap-4">
-                <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.jpg" 
+                <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/dev/src/assets/nova-subscriber-logo.jpg" 
                      alt="Nova Subscriber" 
                      class="h-9 w-auto">
             </div>
