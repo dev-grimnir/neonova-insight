@@ -237,9 +237,12 @@ class NeonovaDashboardController {
             // === PROGRESSIVE LOOKBACK FOR NEW CUSTOMERS ===
             const lookbackPeriods = [
                 sinceDate,                    // Normal narrow poll
-                new Date(Date.now() - 24 * 60 * 60 * 1000),   // Last 24 hours
-                new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days (full bootstrap)
+                new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),     // 1 day
+                new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),     // 7 days
+                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),    // 30 days
+                new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),    // 3 months
+                new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),   // 6 months
+                new Date(Date.now() - 335 * 24 * 60 * 60 * 1000)    // ~11 months max
             ];
 
             let latest = null;
@@ -251,8 +254,8 @@ class NeonovaDashboardController {
             // No logs at all (even after 30 days) → safe default
             if (!latest) {
                 if (customer.status === undefined || customer.status === null) {
-                    customer.update('Unknown', 0);
-                    console.log(`[updateCustomerStatus] New customer initialized: ${customer.radiusUsername} → Unknown`);
+                    customer.update('Account Not Found', 0);
+                    console.log(`[updateCustomerStatus] No logs found after 11-month lookback — set to 'Account Not Found': ${customer.radiusUsername}`);
                 } else if (customer.lastEventTime !== null) {
                     // Existing customer with no new events — increment duration
                     const eventDate = new Date(customer.lastEventTime);
