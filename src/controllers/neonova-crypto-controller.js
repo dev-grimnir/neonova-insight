@@ -65,8 +65,6 @@ class NeonovaCryptoController {
      * Iterations = 100,000 (strong but still fast on modern devices).
      */
     static async #deriveKey(passphrase) {
-        .log("[NeonovaCryptoController.#deriveKey] deriving new key from passphrase");
-
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
             "raw",
