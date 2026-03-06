@@ -242,6 +242,7 @@ class NeonovaDashboardController {
             }
 
             // No logs at all (even after 30 days) → safe default
+            console.log("NeonovaDashboardController.getLatestEntry() -> latest = " + latest);
             if (!latest) {
                 if (customer.status === undefined || customer.status === null) {
                     customer.update('Account Not Found', 0);
