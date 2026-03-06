@@ -3,6 +3,7 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         super();
         this.controller = controller;
         this.modal = null;
+        this._keyCleanup = null;   // Will hold the Escape listener remover
     }
 
     show() {
@@ -38,7 +39,7 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         this.modal.innerHTML = html;
         document.body.appendChild(this.modal);
 
-        // Bottom slide + fade
+        // Bottom slide + fade (unchanged)
         setTimeout(() => {
             const overlay = this.modal.querySelector('#passphrase-modal');
             const box = this.modal.querySelector('.transform');
@@ -49,25 +50,89 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         this.attachListeners();
     }
 
+    /**
+     * Attaches all listeners (existing + new keyboard support).
+     * 
+     * New:
+     *   - Escape key anywhere on the page while modal is open → cancel with toast
+     *   - Enter is already present but now uses keydown (more reliable) and preventDefault
+     */
     attachListeners() {
         const input = this.modal.querySelector('#passphrase-input');
         const remember = this.modal.querySelector('#remember-cb');
+        const overlay = this.modal.querySelector('#passphrase-modal');
 
         const submit = () => {
             const passphrase = input.value.trim();
             this.controller.handleSubmit(passphrase, remember.checked);
         };
 
+        // Existing click listeners (unchanged)
         this.modal.querySelector('#unlock-btn').addEventListener('click', submit);
         this.modal.querySelector('#cancel-btn').addEventListener('click', () => this.controller.handleCancel());
-        this.modal.querySelector('#passphrase-modal').addEventListener('click', e => {
+        overlay.addEventListener('click', e => {
             if (e.target.id === 'passphrase-modal') this.controller.handleCancel();
         });
-        input.addEventListener('keypress', e => { if (e.key === 'Enter') submit(); });
+
+        // Improved Enter support (keydown is more reliable than keypress)
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                console.log("[NeonovaPassphraseView.input.keydown] Enter pressed — submitting");
+                e.preventDefault();
+                submit();
+            }
+        });
+
+        // NEW: Escape key listener on document (modal-wide)
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                console.log("[NeonovaPassphraseView.escapeHandler] Escape pressed — cancelling");
+                this.controller.handleCancel();
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Store cleanup function
+        this._keyCleanup = () => {
+            document.removeEventListener('keydown', escapeHandler);
+        };
     }
 
+    /**
+     * Shows a clean temporary toast (red, top-center, auto-dismisses).
+     * Called by controller on cancel/Escape when a key is required.
+     */
+    showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-3.5 rounded-2xl shadow-2xl z-[10000] flex items-center gap-3 text-sm font-medium animate-fade-in';
+        toast.innerHTML = `⚠️ ${message}`;
+        document.body.appendChild(toast);
+
+        console.log(`[NeonovaPassphraseView.showToast] displayed: "${message}"`);
+
+        // Auto-dismiss after 2.8 seconds with smooth fade
+        setTimeout(() => {
+            toast.style.transition = 'all 0.4s ease';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translate(-50%, -10px)';
+            setTimeout(() => toast.remove(), 400);
+        }, 2800);
+    }
+
+    /**
+     * Hides the modal and cleans up ALL listeners (including Escape).
+     * Animation unchanged.
+     */
     hide() {
         if (!this.modal) return;
+
+        // Cleanup keyboard listener first
+        if (this._keyCleanup) {
+            console.log("[NeonovaPassphraseView.hide] cleaning up Escape listener");
+            this._keyCleanup();
+            this._keyCleanup = null;
+        }
+
         const overlay = this.modal.querySelector('#passphrase-modal');
         const box = this.modal.querySelector('.transform');
         if (overlay) overlay.classList.remove('opacity-100');
