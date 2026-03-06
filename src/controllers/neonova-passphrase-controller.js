@@ -35,6 +35,5 @@ class NeonovaPassphraseController {
     handleCancel() {
         console.log("[NeonovaPassphraseController.handleCancel] user cancelled — showing required key toast");
         this.view.showToast("A key is required to unlock the dashboard");
-        this.view.hide();
     }
 }
