@@ -12,32 +12,28 @@ class NeonovaPassphraseController {
     }
 
     /**
-     * Handles passphrase submission from the modal.
-     * 
-     * Now 100% delegated to NeonovaCryptoController.setPassphrase().
-     * No more direct deriveKey or global masterKey touching.
-     * 
-     * This keeps the passphrase controller extremely thin — exactly as it should be.
+     * Called on Unlock button or Enter key.
+     * Enforces passphrase is REQUIRED — no plaintext option.
      */
     async handleSubmit(passphrase, rememberDevice) {
-        this.view.hide();
-
-        if (!passphrase?.trim()) {
-            console.warn("[NeonovaPassphraseController.handleSubmit] Encryption disabled – plaintext mode");
-            this._resolve(null);
-            return;
+        if (!passphrase) {
+            console.warn("[NeonovaPassphraseController.handleSubmit] empty passphrase — showing required toast");
+            this.view.showToast("A key is required to unlock the dashboard");
+            return; // Keep modal open
         }
 
-        console.log("[NeonovaPassphraseController.handleSubmit] delegating to NeonovaCryptoController.setPassphrase");
-
-        // Delegate everything to the static crypto controller
+        console.log("[NeonovaPassphraseController.handleSubmit] valid passphrase — unlocking");
         await NeonovaCryptoController.setPassphrase(passphrase, rememberDevice);
-        
+        this.view.hide();
         this._resolve(passphrase);
     }
 
+    /**
+     * Called on Cancel button, Escape key, or click outside.
+     * Shows the required-key toast then closes the modal.
+     */
     handleCancel() {
-        this.view.hide();
-        this._resolve(null);
+        console.log("[NeonovaPassphraseController.handleCancel] user cancelled — showing required key toast");
+        this.view.showToast("A key is required to unlock the dashboard");
     }
 }
