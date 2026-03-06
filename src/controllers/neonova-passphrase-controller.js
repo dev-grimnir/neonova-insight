@@ -11,23 +11,28 @@ class NeonovaPassphraseController {
         });
     }
 
+    /**
+     * Handles passphrase submission from the modal.
+     * 
+     * Now 100% delegated to NeonovaCryptoController.setPassphrase().
+     * No more direct deriveKey or global masterKey touching.
+     * 
+     * This keeps the passphrase controller extremely thin — exactly as it should be.
+     */
     async handleSubmit(passphrase, rememberDevice) {
         this.view.hide();
 
         if (!passphrase?.trim()) {
-            console.warn("🔓 Encryption disabled – plaintext mode");
+            console.warn("[NeonovaPassphraseController.handleSubmit] Encryption disabled – plaintext mode");
             this._resolve(null);
             return;
         }
 
-        const { key, salt } = await deriveKey(passphrase);
-        masterKey = { key, salt };
+        console.log("[NeonovaPassphraseController.handleSubmit] delegating to NeonovaCryptoController.setPassphrase");
 
-        if (rememberDevice) {
-            await saveRememberedMasterKey(key);
-            console.log('🔑 Encryption key remembered on this device');
-        }
-
+        // Delegate everything to the static crypto controller
+        await NeonovaCryptoController.setPassphrase(passphrase, rememberDevice);
+        
         this._resolve(passphrase);
     }
 
