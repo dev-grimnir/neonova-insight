@@ -39,10 +39,11 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         this.modal.innerHTML = html;
         document.body.appendChild(this.modal);
 
-        // Bottom slide + fade (unchanged)
+        // Bottom-slide-up + fade entrance (now matches the desired direction)
         setTimeout(() => {
             const overlay = this.modal.querySelector('#passphrase-modal');
-            const box = this.modal.querySelector('.transform');
+            // More reliable selector: direct child of overlay (avoids class fragility)
+            const box = this.modal.querySelector('#passphrase-modal > div');
             if (overlay) overlay.classList.add('opacity-100');
             if (box) box.classList.remove('translate-y-12');
         }, 10);
@@ -50,13 +51,6 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         this.attachListeners();
     }
 
-    /**
-     * Attaches all listeners (existing + new keyboard support).
-     * 
-     * New:
-     *   - Escape key anywhere on the page while modal is open → cancel with toast
-     *   - Enter is already present but now uses keydown (more reliable) and preventDefault
-     */
     attachListeners() {
         const input = this.modal.querySelector('#passphrase-input');
         const remember = this.modal.querySelector('#remember-cb');
@@ -119,10 +113,6 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         }, 2800);
     }
 
-    /**
-     * Hides the modal and cleans up ALL listeners (including Escape).
-     * Animation unchanged.
-     */
     hide() {
         if (!this.modal) return;
 
@@ -134,9 +124,11 @@ class NeonovaPassphraseView extends BaseNeonovaView {
         }
 
         const overlay = this.modal.querySelector('#passphrase-modal');
-        const box = this.modal.querySelector('.transform');
+        // Consistent reliable selector
+        const box = this.modal.querySelector('#passphrase-modal > div');
+
         if (overlay) overlay.classList.remove('opacity-100');
-        if (box) box.classList.add('translate-y-12');
+        if (box) box.classList.add('translate-y-12');  // Slide back down on exit
 
         setTimeout(() => {
             if (this.modal?.parentNode) this.modal.parentNode.removeChild(this.modal);
