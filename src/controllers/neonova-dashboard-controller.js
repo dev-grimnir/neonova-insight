@@ -68,83 +68,93 @@ class NeonovaDashboardController {
         if (this.view) this.view.render();
     }
 
+    /**
+     * Main initialization for the dashboard.
+     * 
+     * Now completely delegates crypto setup to NeonovaCryptoController.
+     * No more global masterKey, no more direct calls to old utils functions.
+     * 
+     * Flow:
+     *   1. Init the crypto controller (loads remembered key or prepares for passphrase)
+     *   2. If no key yet → show passphrase modal once
+     *   3. Load customers (now using decryptData from crypto controller)
+     *   4. Start polling and render
+     */
     async initAsync() {
         if (this._initialized) {
-            console.log("initAsync already ran — skipping duplicate call");
+            console.log("[NeonovaDashboardController.initAsync] already ran — skipping duplicate call");
             return;
         }
         this._initialized = true;
     
-        console.log("=== initAsync starting ===");
+        console.log("[NeonovaDashboardController.initAsync] === initAsync starting ===");
     
-        let rememberedKey = await loadRememberedMasterKey();
-        if (rememberedKey) {
-            masterKey = { key: rememberedKey, salt: null };
-            console.log("🔑 Remembered key LOADED successfully");
-        } else {
+        // Delegate ALL key setup to the static crypto controller
+        await NeonovaCryptoController.initMasterKey();
+    
+        // If this is the very first time (no remembered key), show passphrase modal exactly once
+        if (!NeonovaCryptoController.hasMasterKey) {
+            console.log("[NeonovaDashboardController.initAsync] no remembered key — showing passphrase modal");
             this.passphraseController = new NeonovaPassphraseController(this);
             await this.passphraseController.show();   // only one modal
+        } else {
+            console.log("[NeonovaDashboardController.initAsync] remembered key present — skipping passphrase prompt");
         }
     
         this.customers = await this.load();
         this.startPolling();
         if (this.view) this.view.render();
-        console.log("✅ Neonova Dashboard with encryption loaded");
+        console.log("[NeonovaDashboardController.initAsync] ✅ Neonova Dashboard with encryption loaded");
     }
 
+    /**
+     * Loads customers from localStorage using the crypto controller.
+     * 
+     * Now 100% delegated — no more direct decrypt calls or global masterKey.
+     * If decryption fails, we clear only the customers data (never the master key).
+     */
     async load() {
         const data = localStorage.getItem('novaDashboardCustomers');
         if (!data) {
-            console.log('load: no data in localStorage');
+            console.log("[NeonovaDashboardController.load] no data in localStorage");
             return [];
-        }
-    
-        if (!masterKey) {
-            console.log('load: plaintext fallback');
-            try { return JSON.parse(data).map(c => Object.assign(new Customer('', ''), c)); }
-            catch { return []; }
         }
     
         try {
-            const jsonStr = await decryptData(data);
+            const jsonStr = await NeonovaCryptoController.decryptData(data);
             const customers = JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
-            console.log('load: DECRYPTED successfully —', customers.length, 'customers');
+            console.log(`[NeonovaDashboardController.load] DECRYPTED successfully — ${customers.length} customers`);
             return customers;
         } catch (e) {
-            console.error("Decryption failed", e);
+            console.error("[NeonovaDashboardController.load] Decryption failed", e);
             alert("Decryption failed. Clearing everything.");
             localStorage.removeItem('novaDashboardCustomers');
-            localStorage.removeItem('novaDashboardMasterKey');
             return [];
         }
     }
-    
+
+        /**
+     * Saves customers to localStorage using the crypto controller.
+     * 
+     * Now fully delegated — no more global masterKey or direct encrypt calls.
+     * Keeps the "protect empty" guard you already liked.
+     */
     async save() {
-        console.log('save called — length:', this.customers?.length ?? 'undefined');
+        console.log(`[NeonovaDashboardController.save] save called — length: ${this.customers ? this.customers.length : 'undefined'}`);
     
         if (!this.customers) {
-            console.log('save: customers undefined — SKIPPING');
+            console.log("[NeonovaDashboardController.save] customers undefined — SKIPPING (protecting data)");
             return;
         }
     
         const jsonStr = JSON.stringify(this.customers);
-        console.log('save: json length', jsonStr.length);
-    
-        if (!masterKey?.key) {
-            localStorage.setItem('novaDashboardCustomers', jsonStr);
-            console.log('save: plaintext saved');
-            return;
-        }
     
         try {
-            const encrypted = await encryptData(jsonStr);
-            if (!encrypted) throw new Error('encryptData returned null/empty');
+            const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
             localStorage.setItem('novaDashboardCustomers', encrypted);
-            console.log('save: ENCRYPTED and saved OK, length:', encrypted.length);
+            console.log("[NeonovaDashboardController.save] ENCRYPTED and saved successfully");
         } catch (e) {
-            console.error("Encryption failed — NOT saving to avoid corruption", e);
-            // Optionally alert user or show toast: "Save failed — encryption error. Data not persisted."
-            // Do NOT clear anything here
+            console.error("[NeonovaDashboardController.save] Encryption failed", e);
         }
     }
 
