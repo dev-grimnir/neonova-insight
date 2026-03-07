@@ -4,12 +4,16 @@ class NeonovaDashboardController {
         this.customers = [];   
         this._initialized = false;
         this.passphraseController = null;
-        this.initAsync();               
-        this.pollingIntervalMinutes = 5;
-        this.pollIntervalMs = 5 * 60 * 1000;
-        this.pollInterval = null;  
+        this.initAsync();
+        // Load persisted polling interval (default 1 min) and paused state (default false)
+        this.pollingIntervalMinutes = parseInt(localStorage.getItem('novaPollingIntervalMinutes')) || 1;
+        this.isPollingPaused = localStorage.getItem('novaPollingPaused') === 'true';  // string 'true' or false
+
+        this.pollIntervalMs = this.pollingIntervalMinutes * 60 * 1000;
+
+        // If paused, don't start polling yet
+        if (!this.isPollingPaused) this.startPolling();
         this.view = new NeonovaDashboardView(this);
-        this.isPollingPaused = false;
     }
 
     startPolling() {
@@ -29,7 +33,8 @@ class NeonovaDashboardController {
         minutes = Math.max(1, Math.min(60, parseInt(minutes) || 5));
         this.pollingIntervalMinutes = minutes;
         this.pollIntervalMs = minutes * 60 * 1000;
-    
+        localStorage.setItem('novaPollingIntervalMinutes', minutes.toString());
+        console.log(`[NeonovaDashboardController.setPollingInterval] Saved new interval: ${minutes} minutes`);
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
             this.pollInterval = setInterval(() => this.poll(), this.pollIntervalMs);
@@ -44,6 +49,9 @@ class NeonovaDashboardController {
         if (!this.isPollingPaused) {
             this.poll();  // Immediate update on resume
             this.pollInterval = setInterval(() => this.poll(), this.pollIntervalMs);
+            // Save the paused state
+            localStorage.setItem('novaPollingPaused', this.isPollingPaused.toString());
+            console.log(`[NeonovaDashboardController.togglePolling] Saved polling paused: ${this.isPollingPaused}`);
         }
         this.view?.render();  // Refresh UI to show pause/resume state
     }
