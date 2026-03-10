@@ -443,8 +443,8 @@ class NeonovaDashboardView extends BaseNeonovaView{
     
         if (this.isMinimized) {
             // SLIDE DOWN to position where header is at bottom (reverse of maximize)
-            const header = this.panel.querySelector('.flex items-center justify-between');
-            const headerHeight = header.offsetHeight;
+            const header = this.panel.querySelector('.flex.items-center.justify-between');
+            const headerHeight = header ? header.offsetHeight : 0;
             const panelTop = parseInt(getComputedStyle(dash).top, 10); // Current top position (60px)
             const panelHeight = dash.offsetHeight;
             const viewportHeight = window.innerHeight;
