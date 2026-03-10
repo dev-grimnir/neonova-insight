@@ -33,9 +33,7 @@ class NeonovaDashboardView extends BaseNeonovaView{
             gap: 24px;
         `;
 
-        // Calc exact header height for minimized state (dynamic, no hardcodes)
-        this.headerHeight = 64;  // Approximate your header py-4 + borders; measure or calc dynamically if variable
-        this.panel.style.overflow = 'hidden';  // Prevent content spill during animation
+        this.panel.style.overflow = 'hidden';  // Clip content during slide (prevents "falling out" on maximize)
 
         this.minimizeBar.innerHTML = `
             <div class="flex items-center gap-4">
@@ -443,45 +441,50 @@ class NeonovaDashboardView extends BaseNeonovaView{
         const bar = this.minimizeBar;
         this.isMinimized = !this.isMinimized;
     
-        // Set transition for smooth height change (ease-in-out for no bounce)
-        dash.style.transition = 'height 500ms ease-in-out';
+        // Set transition for smooth slide (your existing cubic-bezier for controlled motion)
+        dash.style.transition = 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)';
     
         if (this.isMinimized) {
-            // Minimize: shrink to header height (top only visible)
-            dash.style.height = dash.scrollHeight + 'px';  // Start from current full
+            // Minimize: slide down to bottom as one piece
+            dash.style.position = 'fixed';  // Ensure fixed
+            dash.style.bottom = '0';  // Align to bottom for precise stop
+            dash.style.transform = 'translateY(0)';  // Start at center
             requestAnimationFrame(() => {
-                dash.style.height = this.headerHeight + 'px';  // Shrink to header (no overshoot)
+                dash.style.transform = 'translateY(calc(100vh - ' + dash.offsetHeight + 'px))';  // Slide down to bottom (full height)
             });
     
-            // Switch to minimized bar AFTER animation (no snap)
+            // Switch to bar AFTER animation (no snap)
             setTimeout(() => {
                 dash.style.display = 'none';
                 bar.style.display = 'flex';
-                // Reset height for next maximize
+                // Reset for next (prevents jank)
                 dash.style.transition = '';
-                dash.style.height = '';
-            }, 500);  // match duration
-            console.log("[NeonovaDashboardView.toggleMinimize] Minimized — shrunk to header height");
+                dash.style.transform = 'translateY(0)';
+                dash.style.bottom = '';
+            }, 500);
+            console.log("[NeonovaDashboardView.toggleMinimize] Minimized — slid down as one piece");
         } else {
-            // Maximize: expand from header height to full as one piece
+            // Maximize: slide up from bottom as one piece
             bar.style.display = 'none';
             dash.style.display = 'block';
-            dash.style.height = this.headerHeight + 'px';  // Start from minimized
+            dash.style.position = 'fixed';
+            dash.style.bottom = '0';
+            dash.style.transform = 'translateY(calc(100vh - ' + dash.offsetHeight + 'px))';  // Start at bottom
     
             // Force reflow
             void dash.offsetWidth;
     
-            // Animate expand to full height
+            // Animate up to center
             requestAnimationFrame(() => {
-                dash.style.height = dash.scrollHeight + 'px';
+                dash.style.transform = 'translateY(0)';
             });
     
-            // Reset after animation (no jank)
+            // Reset after (no jank)
             setTimeout(() => {
                 dash.style.transition = '';
-                dash.style.height = '';
+                dash.style.bottom = '';
             }, 500);
-            console.log("[NeonovaDashboardView.toggleMinimize] Maximized — expanded as one piece");
+            console.log("[NeonovaDashboardView.toggleMinimize] Maximized — slid up from bottom as one piece");
         }
     }
 
