@@ -9,7 +9,6 @@ class NeonovaDashboardView extends BaseNeonovaView{
     createElements() {
         // Minimized bar – matches dashboard width exactly
         this.minimizeBar = document.createElement('div');
-        this.minimizedHeight = this.minimizeBar.offsetHeight + 'px';
         this.minimizeBar.style.cssText = `
             position: fixed;
             bottom: 0;
@@ -33,6 +32,10 @@ class NeonovaDashboardView extends BaseNeonovaView{
             justify-content: space-between;
             gap: 24px;
         `;
+
+        // Calc exact header height for minimized state (dynamic, no hardcodes)
+        this.headerHeight = 64;  // Approximate your header py-4 + borders; measure or calc dynamically if variable
+        this.panel.style.overflow = 'hidden';  // Prevent content spill during animation
 
         this.minimizeBar.innerHTML = `
             <div class="flex items-center gap-4">
@@ -439,50 +442,46 @@ class NeonovaDashboardView extends BaseNeonovaView{
         const dash = this.panel;
         const bar = this.minimizeBar;
         this.isMinimized = !this.isMinimized;
-
-        // Set transition for smooth shrink/slide (ease-in-out prevents bounce)
-        dash.style.transition = 'max-height 500ms ease-in-out, transform 500ms ease-in-out';
-
+    
+        // Set transition for smooth height change (ease-in-out for no bounce)
+        dash.style.transition = 'height 500ms ease-in-out';
+    
         if (this.isMinimized) {
-            // Minimize: shrink height to bar size + slide down slightly for "minimize" feel
-            dash.style.maxHeight = dash.scrollHeight + 'px';  // Start from current full
+            // Minimize: shrink to header height (top only visible)
+            dash.style.height = dash.scrollHeight + 'px';  // Start from current full
             requestAnimationFrame(() => {
-                dash.style.maxHeight = this.minimizedHeight;  // Shrink to exact bar height
-                dash.style.transform = 'translate(-50%, calc(100vh - ' + this.minimizedHeight + '))';  // Slide to bottom (viewport - bar, no overshoot)
+                dash.style.height = this.headerHeight + 'px';  // Shrink to header (no overshoot)
             });
-
-            // Hide panel + show bar AFTER animation (no snap)
+    
+            // Switch to minimized bar AFTER animation (no snap)
             setTimeout(() => {
                 dash.style.display = 'none';
                 bar.style.display = 'flex';
-                // Reset styles for next maximize (prevents jank)
+                // Reset height for next maximize
                 dash.style.transition = '';
-                dash.style.maxHeight = '';
-                dash.style.transform = 'translateX(-50%)';
+                dash.style.height = '';
             }, 500);  // match duration
-            console.log("[NeonovaDashboardView.toggleMinimize] Minimized — shrunk to bar height with no overshoot");
+            console.log("[NeonovaDashboardView.toggleMinimize] Minimized — shrunk to header height");
         } else {
-            // Maximize: expand height from bar size + slide up to center
+            // Maximize: expand from header height to full as one piece
             bar.style.display = 'none';
             dash.style.display = 'block';
-            dash.style.maxHeight = this.minimizedHeight;  // Start from bar height
-            dash.style.transform = 'translate(-50%, calc(100vh - ' + this.minimizedHeight + '))';  // Start at bottom
-
-            // Force reflow for animation start
+            dash.style.height = this.headerHeight + 'px';  // Start from minimized
+    
+            // Force reflow
             void dash.offsetWidth;
-
-            // Animate expand + slide up
+    
+            // Animate expand to full height
             requestAnimationFrame(() => {
-                dash.style.maxHeight = dash.scrollHeight + 'px';  // Expand to full content
-                dash.style.transform = 'translateX(-50%)';  // Slide to center
+                dash.style.height = dash.scrollHeight + 'px';
             });
-
-            // Reset styles after animation (no jank on next toggle)
+    
+            // Reset after animation (no jank)
             setTimeout(() => {
                 dash.style.transition = '';
-                dash.style.maxHeight = '';
+                dash.style.height = '';
             }, 500);
-            console.log("[NeonovaDashboardView.toggleMinimize] Maximized — expanded from bar height");
+            console.log("[NeonovaDashboardView.toggleMinimize] Maximized — expanded as one piece");
         }
     }
 
