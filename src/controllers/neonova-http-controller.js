@@ -136,7 +136,6 @@ class NeonovaHTTPController {
             }
         }
     
-        console.warn('[#extractTotalEntries] No total found in header text. Snippet:', headerText.substring(0, 500));
         return null;
     }
 
@@ -263,13 +262,7 @@ class NeonovaHTTPController {
         return `https://admin.neonova.net/rat/index.php?${params.toString()}`;
     }
 
-    /**
-     * paginateReportLogs — now with:
-     *   • Total count scraped from first page and passed to onProgress as 3rd arg
-     *   • AbortSignal support for cancellation (pass as final argument)
-     *   • Returns the entries array directly
-     *   • Backward-compatible: old onProgress handlers ignoring the 3rd arg still work
-     */
+
 /**
  * paginateReportLogs — now with:
  *   • Total count scraped from first page and passed to onProgress as 3rd arg
@@ -369,6 +362,11 @@ static async paginateReportLogs(username, startDate = null, endDate = null, onPr
         // Uses private #extractTotalEntries — if it fails, total stays null.
         if (page === 1 && total === null) {
             total = this.#extractTotalEntries(doc);
+
+            if (total === null) {
+                console.warn('[NeonovaHTTPController] user not found.  Returning null');
+                return null;
+            }
         }
 
         // Line 50: Parse the rows from this page into LogEntry objects.
@@ -429,7 +427,7 @@ static async paginateReportLogs(username, startDate = null, endDate = null, onPr
                 now
             );
     
-            if (entries.length === 0) {
+            if (entries === null) {
                 return null;
             }
     

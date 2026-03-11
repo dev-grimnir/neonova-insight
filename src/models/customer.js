@@ -2,8 +2,8 @@ class Customer {
     constructor(radiusUsername, friendlyName = '') {
         this.radiusUsername = radiusUsername.trim();
         this.friendlyName = (friendlyName.trim() || radiusUsername.trim());
-        this.status = 'Unknown';               // 'Connected' / 'Not Connected' / 'Error' / 'Unknown'
-        this.durationSec = 0;                  // seconds in current status
+        this.status = 'Connecting...';               
+        this.durationSec = 0;                  
         this.lastUpdate = new Date().toLocaleString();
         this.lastEventTime = null
     }

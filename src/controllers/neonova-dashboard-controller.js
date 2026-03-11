@@ -4,12 +4,16 @@ class NeonovaDashboardController {
         this.customers = [];   
         this._initialized = false;
         this.passphraseController = null;
-        this.initAsync();               
-        this.pollingIntervalMinutes = 5;
-        this.pollIntervalMs = 5 * 60 * 1000;
-        this.pollInterval = null;  
+        this.initAsync();
+        // Load persisted polling interval (default 1 min) and paused state (default false)
+        this.pollingIntervalMinutes = parseInt(localStorage.getItem('novaPollingIntervalMinutes')) || 1;
+        this.isPollingPaused = localStorage.getItem('novaPollingPaused') === 'true';  // string 'true' or false
+
+        this.pollIntervalMs = this.pollingIntervalMinutes * 60 * 1000;
+
+        // If paused, don't start polling yet
+        if (!this.isPollingPaused) this.startPolling();
         this.view = new NeonovaDashboardView(this);
-        this.isPollingPaused = false;
     }
 
     startPolling() {
@@ -29,23 +33,56 @@ class NeonovaDashboardController {
         minutes = Math.max(1, Math.min(60, parseInt(minutes) || 5));
         this.pollingIntervalMinutes = minutes;
         this.pollIntervalMs = minutes * 60 * 1000;
-    
+        localStorage.setItem('novaPollingIntervalMinutes', minutes.toString());
+        console.log(`[NeonovaDashboardController.setPollingInterval] Saved new interval: ${minutes} minutes`);
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
             this.pollInterval = setInterval(() => this.poll(), this.pollIntervalMs);
         }
     }
 
+    /**
+     * Toggles the polling state between paused and active.
+     * 
+     * Behavior:
+     *   - Flips the isPollingPaused flag.
+     *   - Always clears any existing poll interval.
+     *   - If resuming (not paused): Runs an immediate poll, then restarts the scheduled interval.
+     *   - Always saves the new paused state to localStorage for persistence across reloads.
+     *   - Refreshes the UI to reflect the new state (e.g., update button icons/text).
+     * 
+     * This ensures consistent state saving (paused or not) — original only saved on resume.
+     */
     togglePolling() {
+        // Flip the paused flag
         this.isPollingPaused = !this.isPollingPaused;
+        console.log(`[NeonovaDashboardController.togglePolling] Toggled polling paused: ${this.isPollingPaused}`);
+
+        // Always clear the existing interval to avoid duplicates
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
+            this.pollInterval = null;
+            console.log("[NeonovaDashboardController.togglePolling] Cleared existing poll interval");
         }
+
+        // If resuming polling (not paused anymore)
         if (!this.isPollingPaused) {
-            this.poll();  // Immediate update on resume
+            // Run an immediate poll to get fresh data
+            this.poll();
+            console.log("[NeonovaDashboardController.togglePolling] Ran immediate poll on resume");
+
+            // Restart the scheduled interval
             this.pollInterval = setInterval(() => this.poll(), this.pollIntervalMs);
+            console.log(`[NeonovaDashboardController.togglePolling] Restarted poll interval: every ${this.pollingIntervalMinutes} minutes`);
         }
-        this.view?.render();  // Refresh UI to show pause/resume state
+
+        // Always persist the new paused state to localStorage (fix for original inconsistency)
+        localStorage.setItem('novaPollingPaused', this.isPollingPaused.toString());
+        console.log(`[NeonovaDashboardController.togglePolling] Saved polling paused state: ${this.isPollingPaused}`);
+
+        // Refresh the view to update UI elements (e.g., pause/resume button icon or text)
+        this.view?.render();
+        console.log("[NeonovaDashboardController.togglePolling] UI refreshed to reflect new polling state");
     }
 
     async add(radiusUsername, friendlyName) {
@@ -82,29 +119,24 @@ class NeonovaDashboardController {
      */
     async initAsync() {
         if (this._initialized) {
-            console.log("[NeonovaDashboardController.initAsync] already ran — skipping duplicate call");
             return;
         }
         this._initialized = true;
-    
-        console.log("[NeonovaDashboardController.initAsync] === initAsync starting ===");
     
         // Delegate ALL key setup to the static crypto controller
         await NeonovaCryptoController.initMasterKey();
     
         // If this is the very first time (no remembered key), show passphrase modal exactly once
         if (!NeonovaCryptoController.hasMasterKey) {
-            console.log("[NeonovaDashboardController.initAsync] no remembered key — showing passphrase modal");
             this.passphraseController = new NeonovaPassphraseController(this);
             await this.passphraseController.show();   // only one modal
         } else {
-            console.log("[NeonovaDashboardController.initAsync] remembered key present — skipping passphrase prompt");
+            
         }
     
         this.customers = await this.load();
         this.startPolling();
         if (this.view) this.view.render();
-        console.log("[NeonovaDashboardController.initAsync] ✅ Neonova Dashboard with encryption loaded");
     }
 
     /**
@@ -116,17 +148,14 @@ class NeonovaDashboardController {
     async load() {
         const data = localStorage.getItem('novaDashboardCustomers');
         if (!data) {
-            console.log("[NeonovaDashboardController.load] no data in localStorage");
             return [];
         }
     
         try {
             const jsonStr = await NeonovaCryptoController.decryptData(data);
             const customers = JSON.parse(jsonStr).map(c => Object.assign(new Customer('', ''), c));
-            console.log(`[NeonovaDashboardController.load] DECRYPTED successfully — ${customers.length} customers`);
             return customers;
         } catch (e) {
-            console.error("[NeonovaDashboardController.load] Decryption failed", e);
             alert("Decryption failed. Clearing everything.");
             localStorage.removeItem('novaDashboardCustomers');
             return [];
@@ -140,10 +169,8 @@ class NeonovaDashboardController {
      * Keeps the "protect empty" guard you already liked.
      */
     async save() {
-        console.log(`[NeonovaDashboardController.save] save called — length: ${this.customers ? this.customers.length : 'undefined'}`);
-    
         if (!this.customers) {
-            console.log("[NeonovaDashboardController.save] customers undefined — SKIPPING (protecting data)");
+            //customers undefined — SKIPPING (protecting data)
             return;
         }
     
@@ -152,7 +179,7 @@ class NeonovaDashboardController {
         try {
             const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
             localStorage.setItem('novaDashboardCustomers', encrypted);
-            console.log("[NeonovaDashboardController.save] ENCRYPTED and saved successfully");
+            //ENCRYPTED and saved successfully
         } catch (e) {
             console.error("[NeonovaDashboardController.save] Encryption failed", e);
         }
@@ -237,9 +264,12 @@ class NeonovaDashboardController {
             // === PROGRESSIVE LOOKBACK FOR NEW CUSTOMERS ===
             const lookbackPeriods = [
                 sinceDate,                    // Normal narrow poll
-                new Date(Date.now() - 24 * 60 * 60 * 1000),   // Last 24 hours
-                new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days (full bootstrap)
+                new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),     // 1 day
+                new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),     // 7 days
+                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),    // 30 days
+                new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),    // 3 months
+                new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),   // 6 months
+                new Date(Date.now() - 335 * 24 * 60 * 60 * 1000)    // ~11 months max
             ];
 
             let latest = null;
@@ -249,10 +279,12 @@ class NeonovaDashboardController {
             }
 
             // No logs at all (even after 30 days) → safe default
+            console.log("NeonovaDashboardController.getLatestEntry() -> latest = " + latest);
             if (!latest) {
-                if (customer.status === undefined || customer.status === null) {
-                    customer.update('Unknown', 0);
-                    console.log(`[updateCustomerStatus] New customer initialized: ${customer.radiusUsername} → Unknown`);
+                if (latest === null) {
+                    customer.update('Account Not Found', 0);
+                    console.log(`[updateCustomerStatus] No logs found after 11-month lookback — set to 'Account Not Found': ${customer.radiusUsername}`);
+                    return;
                 } else if (customer.lastEventTime !== null) {
                     // Existing customer with no new events — increment duration
                     const eventDate = new Date(customer.lastEventTime);
@@ -277,7 +309,6 @@ class NeonovaDashboardController {
             if (isNew) {
                 customer.update(status, durationSeconds);
                 customer.lastEventTime = eventMs;
-                console.log(`[updateCustomerStatus] Updated with new event:`, { status, durationSeconds, timestamp: latest.timestamp });
             } else {
                 // No change — just keep incrementing duration
                 if (customer.lastEventTime !== null) {
@@ -285,7 +316,7 @@ class NeonovaDashboardController {
                     durationSeconds = Math.floor((Date.now() - existingEventDate.getTime()) / 1000);
                     if (durationSeconds >= 0) customer.update(customer.status, durationSeconds);
                 }
-                console.log('[updateCustomerStatus] No new event; incremented duration');
+                //No new event; incremented duration
             }
         } catch (err) {
             console.error('[updateCustomerStatus] error:', err);

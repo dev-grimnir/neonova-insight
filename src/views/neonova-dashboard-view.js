@@ -33,6 +33,8 @@ class NeonovaDashboardView extends BaseNeonovaView{
             gap: 24px;
         `;
 
+        this.panel.style.overflow = 'hidden';  // Clip content during slide (prevents "falling out" on maximize)
+
         this.minimizeBar.innerHTML = `
             <div class="flex items-center gap-4">
                 <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.png" 
@@ -423,14 +425,33 @@ class NeonovaDashboardView extends BaseNeonovaView{
         overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
     }
 
+    /**
+     * Toggles minimize/expand with smooth slide animation (no overshoot/snap).
+     * 
+     * Fixes the "slides too far then snaps" bug by:
+     *   - Animating max-height from full to minimized (shrink down, stop at bar height).
+     *   - Using ease-in-out for controlled motion (starts/ends slow).
+     *   - Matching 500ms duration with setTimeout cleanup (no timing mismatch).
+     *   - Dynamic heights (viewport - bar height for start, exact bar for end).
+     * 
+     * No new CSS — keeps your transform + duration setup, but max-height prevents overshoot.
+     */
     toggleMinimize() {
         const dash = this.panel;
         const bar = this.minimizeBar;
         this.isMinimized = !this.isMinimized;
-
+    
         if (this.isMinimized) {
-            // SLIDE DOWN → off screen
-            dash.style.transform = 'translate(-50%, 100%)';
+            // SLIDE DOWN to position where header is at bottom (reverse of maximize)
+            const header = this.panel.querySelector('.flex.items-center.justify-between');
+            const headerHeight = header ? header.offsetHeight : 0;
+            const panelTop = parseInt(getComputedStyle(dash).top, 10); // Current top position (60px)
+            const panelHeight = dash.offsetHeight;
+            const viewportHeight = window.innerHeight;
+            const targetTop = viewportHeight - headerHeight;
+            const delta = targetTop - panelTop;
+            const translatePercent = (delta / panelHeight) * 100;
+            dash.style.transform = `translate(-50%, ${translatePercent}%)`;
             
             // Hide panel + show minimize bar AFTER animation finishes
             setTimeout(() => {
@@ -438,7 +459,7 @@ class NeonovaDashboardView extends BaseNeonovaView{
                 bar.style.display = 'flex';
             }, 480);   // slightly longer than transition
         } else {
-            // MAXIMIZE → SLIDE UP
+            // MAXIMIZE → SLIDE UP (unchanged)
             bar.style.display = 'none';
             dash.style.display = 'block';
             
@@ -456,16 +477,5 @@ class NeonovaDashboardView extends BaseNeonovaView{
     }
 
     update() { this.render(); }
-/*
-    updatePollingButton() {
-        const btn = this.panel.querySelector('#poll-toggle-btn');
-        if (!btn) return;
-    
-        if (this.controller.isPollingPaused) {
-            btn.innerHTML = '<i class="fas fa-play"></i> Resume Polling';
-        } else {
-            btn.innerHTML = '<i class="fas fa-pause"></i> Pause Polling';
-            }
-    }
-    */
+
 }

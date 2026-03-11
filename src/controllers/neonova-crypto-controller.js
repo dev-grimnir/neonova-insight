@@ -35,11 +35,11 @@ class NeonovaCryptoController {
      * Returns null if nothing stored or corrupted.
      */
     static async #loadRememberedMasterKey() {
-        console.log("[NeonovaCryptoController.#loadRememberedMasterKey] checking localStorage for remembered key");
+        //checking localStorage for remembered key
 
         const stored = localStorage.getItem('novaDashboardMasterKey');
         if (!stored) {
-            console.log("[NeonovaCryptoController.#loadRememberedMasterKey] no key found in localStorage");
+            //no key found in localStorage
             return null;
         }
 
@@ -65,8 +65,6 @@ class NeonovaCryptoController {
      * Iterations = 100,000 (strong but still fast on modern devices).
      */
     static async #deriveKey(passphrase) {
-        console.log("[NeonovaCryptoController.#deriveKey] deriving new key from passphrase");
-
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
             "raw",
@@ -97,7 +95,7 @@ class NeonovaCryptoController {
      * Called only when rememberDevice = true.
      */
     static async #saveRememberedMasterKey(key) {
-        console.log("[NeonovaCryptoController.#saveRememberedMasterKey] exporting and saving raw key to localStorage");
+        //exporting and saving raw key to localStorage
 
         const raw = await crypto.subtle.exportKey("raw", key);
         const b64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
@@ -121,21 +119,19 @@ class NeonovaCryptoController {
      */
     static async initMasterKey() {
         if (this.#masterKey) {
-            console.log("[NeonovaCryptoController.initMasterKey] master key already initialized — skipping");
+            //master key already initialized — skipping
             return;
         }
-
-        console.log("[NeonovaCryptoController.initMasterKey] starting");
 
         const remembered = await this.#loadRememberedMasterKey();
         if (remembered) {
             this.#masterKey = remembered;
-            console.log("[NeonovaCryptoController.initMasterKey] 🔑 Remembered key LOADED successfully");
+            //Remembered key LOADED successfully
             return;
         }
 
         // First-time user — passphrase modal will handle the rest
-        console.log("[NeonovaCryptoController.initMasterKey] 🔑 No remembered key — waiting for passphrase from NeonovaPassphraseController");
+    
     }
 
         /**
@@ -149,7 +145,7 @@ class NeonovaCryptoController {
      */
     static get hasMasterKey() {
         const hasKey = !!this.#masterKey;
-        console.log(`[NeonovaCryptoController.hasMasterKey] returning: ${hasKey}`);
+        //returning: ${hasKey}
         return hasKey;
     }
 
@@ -171,8 +167,6 @@ class NeonovaCryptoController {
      */
     static async encryptData(plainText) {
         if (!this.#masterKey) throw new Error("No master key — call initMasterKey() or setPassphrase() first");
-
-        console.log(`[NeonovaCryptoController.encryptData] called — plaintext length: ${plainText.length}`);
 
         const enc = new TextEncoder();
         const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV recommended for GCM
@@ -197,7 +191,7 @@ class NeonovaCryptoController {
         }
         const b64 = btoa(binary);
 
-        console.log(`[NeonovaCryptoController.encryptData] success — stored base64 length: ${b64.length}`);
+        //success — stored base64 length: ${b64.length}`);
         return b64;
     }
 
@@ -219,8 +213,6 @@ class NeonovaCryptoController {
     static async decryptData(encryptedB64) {
         if (!this.#masterKey) throw new Error("No master key — call initMasterKey() or setPassphrase() first");
 
-        console.log(`[NeonovaCryptoController.decryptData] called — input base64 length: ${encryptedB64.length}`);
-
         let combined;
         try {
             combined = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
@@ -241,8 +233,7 @@ class NeonovaCryptoController {
             ciphertext
         );
 
-        const result = new TextDecoder().decode(decrypted);
-        console.log(`[NeonovaCryptoController.decryptData] success — decrypted length: ${result.length}`);
+        const result = new TextDecoder().decode(decrypted);;
         return result;
     }
 
@@ -258,16 +249,14 @@ class NeonovaCryptoController {
      * @param {boolean} rememberDevice - Whether to save the raw key in localStorage (default true)
      */
     static async setPassphrase(passphrase, rememberDevice = true) {
-        console.log("[NeonovaCryptoController.setPassphrase] called");
-
         const { key } = await this.#deriveKey(passphrase);
         this.#masterKey = key;
 
         if (rememberDevice) {
             await this.#saveRememberedMasterKey(key);
-            console.log("[NeonovaCryptoController.setPassphrase] 🔑 Master key saved to localStorage for future sessions");
+            //Master key saved to localStorage for future sessions");
         } else {
-            console.log("[NeonovaCryptoController.setPassphrase] 🔑 Key set for this session only (no rememberDevice)");
+            //ey set for this session only (no rememberDevice)");
         }
     }
 }
