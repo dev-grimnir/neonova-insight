@@ -78,7 +78,7 @@ class NeonovaDashboardController {
 
         // Always persist the new paused state to localStorage (fix for original inconsistency)
         localStorage.setItem('novaPollingPaused', this.model.isPollingPaused.toString());
-        console.log([NeonovaDashboardController.togglePolling] Saved polling paused state: ${this.model.isPollingPaused});
+        console.log("[NeonovaDashboardController.togglePolling] Saved polling paused state: ${this.model.isPollingPaused}");
 
 
 
