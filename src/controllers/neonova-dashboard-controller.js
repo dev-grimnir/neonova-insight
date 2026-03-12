@@ -96,7 +96,7 @@ class NeonovaDashboardController {
             alert('Already added');
             return;
         }
-        const newCustomer = new Customer(trimmed, friendlyName);
+        const newCustomer = new NeonovaCustomer(trimmed, friendlyName);
         this.model.addOrUpdateCustomer(newCustomer);
         await this.save();
         if (this.view) this.view.render();
@@ -160,7 +160,7 @@ class NeonovaDashboardController {
             const jsonStr = await NeonovaCryptoController.decryptData(data);
             const parsed = JSON.parse(jsonStr);
             
-            this.model.customers = (parsed.customers || []).map(c => Object.assign(new Customer('', ''), c));
+            this.model.customers = (parsed.customers || []).map(c => Object.assign(new NeonovaCustomer('', ''), c));
             this.model.pollingIntervalMinutes = parsed.pollingIntervalMinutes || this.model.pollingIntervalMinutes;
             this.model.isPollingPaused = parsed.isPollingPaused || this.model.isPollingPaused;
             if (parsed.lastUpdate) {
