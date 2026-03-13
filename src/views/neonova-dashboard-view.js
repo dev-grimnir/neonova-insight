@@ -89,6 +89,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
             box-shadow: 0 -12px 40px rgba(0,0,0,0.8);
             border: 1px solid #22ff88;
             border-bottom: none;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -156,6 +157,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     top: auto !important;
                     bottom: -8px !important;
                     transform: rotate(225deg) !important;
+                }
+                /*Tooltip stays open while you hover OR move onto the slider itself */
+                .minimizeBar .group\\/polling:hover .poll-slider-tooltip,
+                .minimizeBar .poll-slider-tooltip:hover {
+                    display: block !important;
                 }
             `;
             document.head.appendChild(style);
