@@ -71,6 +71,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
     createElements() {
         // Minimized bar – now contains the FULL header with all buttons (exactly like the maximized header)
         this.minimizeBar = document.createElement('div');
+        this.minimizeBar.classList.add('minimizeBar');
         this.minimizeBar.style.cssText = `
             position: fixed;
             bottom: 0;
@@ -88,7 +89,15 @@ class NeonovaDashboardView extends BaseNeonovaView {
             box-shadow: 0 -12px 40px rgba(0,0,0,0.8);
             border: 1px solid #22ff88;
             border-bottom: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
         `;
+
+                // Initial state
+        this.minimizeBar.style.display = 'flex';
+        this.panel.style.display = 'none';
 
         this.minimizeBar.innerHTML = this.getHeaderHTML(true);
         this.minimizeBar.addEventListener('click', (e) => {
@@ -136,6 +145,18 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
                 .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
                 .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
+                /* Minimized bar tooltip: pops UP instead of down + arrow fix */
+                .minimizeBar .poll-slider-tooltip {
+                    top: auto !important;
+                    bottom: 100% !important;
+                    margin-top: 0 !important;
+                    margin-bottom: 12px !important;
+                }
+                .minimizeBar .poll-slider-tooltip > div:last-child {
+                    top: auto !important;
+                    bottom: -8px !important;
+                    transform: rotate(225deg) !important;
+                }
             `;
             document.head.appendChild(style);
         }
