@@ -218,6 +218,12 @@ class NeonovaDashboardController {
         await this.save();
         if (this.view) this.view.render();
         if (pollStatusEl) pollStatusEl.textContent = 'Last update: ' + new Date().toLocaleTimeString();
+
+        this.model.lastUpdatedDisplay = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
     }
 
     isPollingActive() {
