@@ -255,6 +255,7 @@ class NeonovaDashboardController {
     
         await this.save();
         this.rebuildTable();  // or just header if you prefer targeted updates
+        this.view.updateHeader();
     
         if (pollStatusEl) pollStatusEl.textContent = 'Last update: ' + new Date().toLocaleTimeString();
     
