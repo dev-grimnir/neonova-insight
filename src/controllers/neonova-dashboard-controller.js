@@ -219,7 +219,7 @@ class NeonovaDashboardController {
             let ctrl = this.getCustomerController(customer.radiusUsername);
             if (!ctrl) {
                 // Safety: recreate if missing (should not happen)
-                this.createCustomerContrthis.rebuildTable();oller(customer);
+                this.createCustomerController(customer);
                 ctrl = this.getCustomerController(customer.radiusUsername);
             }
             try {
