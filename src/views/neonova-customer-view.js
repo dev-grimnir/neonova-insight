@@ -142,7 +142,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
     #enterEditMode() {
         this.#isEditing = true;
         const nameCell = this.#tr.querySelector('.friendly-name');
-        const current = this.#controller.customer.friendlyName || this.#controller.customer.radiusUsername;
+        const current = this.#controller.model.friendlyName || this.#controller.model.radiusUsername;
 
         nameCell.innerHTML = `
             <input type="text" class="bg-gray-700 text-gray-100 text-sm px-1.5 py-0.5 rounded border border-blue-500/60 w-full focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
