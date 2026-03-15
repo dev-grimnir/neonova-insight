@@ -26,7 +26,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
     }
 
     #renderContent() {
-        const cust = this.#controller.customer;
+        const cust = this.#controller.model;
         
         // Default to safe values if somehow undefined (shouldn't happen after model defaults)
         const status = cust.status ?? 'Connecting...';
