@@ -1,16 +1,13 @@
 // src/controllers/neonova-customer-controller.js
 
 class NeonovaCustomerController {
-    #customer;              // NeonovaCustomer instance
-    #dashboardController;   // reference back to NeonovaDashboardController
-    this.view = new NeonovaCustomerView(this);
-
     constructor(customer, dashboardController) {
         if (!(customer instanceof NeonovaCustomer)) {
             throw new Error('NeonovaCustomerController requires a NeonovaCustomer instance');
         }
-        this.#customer = customer;
-        this.#dashboardController = dashboardController;
+        this.customer = customer;
+        this.dashboardController = dashboardController;
+        this.view = new NeonovaCustomerView(this);
     }
 
     get customer() {
