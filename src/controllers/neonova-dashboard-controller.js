@@ -108,6 +108,7 @@ class NeonovaDashboardController {
         
         await this.save();
         if (this.view) this.view.render();
+        this.rebuildTable();
         
         this.poll();  // Immediate update for the new customer
     }
