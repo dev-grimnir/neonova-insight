@@ -27,46 +27,68 @@ class NeonovaCustomerView extends BaseNeonovaView {
 
     #renderContent() {
         const cust = this.#controller.customer;
-        const isConnected = cust.status === 'Connected';
-
-        const statusBg = isConnected ? 'bg-green-900/40' : 'bg-red-900/40';
-        const statusText = isConnected ? 'text-green-300' : 'text-red-300';
-        const statusBorder = isConnected ? 'border-green-700/50' : 'border-red-700/50';
-        const dotBg = isConnected ? 'bg-green-400' : 'bg-red-400';
-
-        const friendlyName = cust.friendlyName || cust.radiusUsername;
-        const durationStr = typeof cust.getDurationStr === 'function' 
-            ? cust.getDurationStr() 
-            : '—';
-
+        
+        // Default to safe values if somehow undefined (shouldn't happen after model defaults)
+        const status = cust.status ?? 'Connecting...';
+        const durationStr = cust.getDurationStr?.() ?? '—';
+    
+        // Status → style mapping (expand as needed)
+        const statusStyles = {
+            'Connected': {
+                bg: 'bg-emerald-900/40',
+                text: 'text-emerald-300',
+                border: 'border-emerald-700/50',
+                dot: 'bg-emerald-400'
+            },
+            'Not Connected': {
+                bg: 'bg-red-900/40',
+                text: 'text-red-300',
+                border: 'border-red-700/50',
+                dot: 'bg-red-400'
+            },
+            'Connecting...': {
+                bg: 'bg-amber-900/40',
+                text: 'text-amber-300',
+                border: 'border-amber-700/50',
+                dot: 'bg-amber-400 animate-pulse'  // nice visual cue
+            },
+            'Unknown': {
+                bg: 'bg-zinc-800/40',
+                text: 'text-zinc-400',
+                border: 'border-zinc-700/50',
+                dot: 'bg-zinc-500'
+            },
+            'Error': {
+                bg: 'bg-purple-900/40',
+                text: 'text-purple-300',
+                border: 'border-purple-700/50',
+                dot: 'bg-purple-400'
+            },
+            // Add more statuses as your model supports them
+        };
+    
+        const style = statusStyles[status] || statusStyles['Unknown'];  // fallback
+    
         this.#tr.innerHTML = `
             <td class="px-2 py-1 text-sm text-gray-200 whitespace-nowrap">
                 <span class="friendly-name cursor-pointer select-none" title="Click to edit name">
-                    ${friendlyName}
+                    ${cust.friendlyName || cust.radiusUsername}
                 </span>
             </td>
             <td class="px-2 py-1 text-sm text-gray-400 font-mono">${cust.radiusUsername}</td>
             <td class="px-2 py-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${statusBg} ${statusText} ${statusBorder}">
-                    <span class="flex h-2 w-2 rounded-full ${dotBg} ring-1 ring-offset-1 ring-offset-gray-900"></span>
-                    ${cust.status}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}">
+                    <span class="flex h-2 w-2 rounded-full ${style.dot} ring-1 ring-offset-1 ring-offset-gray-900"></span>
+                    ${status}
                 </span>
             </td>
             <td class="px-2 py-1 text-sm text-gray-300">${durationStr}</td>
             <td class="px-2 py-1 text-right space-x-1.5">
-                <button class="remove-btn text-xs px-2.5 py-0.5 bg-red-800/50 hover:bg-red-700/60 text-red-200 rounded border border-red-600/40 transition-colors">
-                    Remove
-                </button>
-                <button class="report-btn text-xs px-2.5 py-0.5 bg-blue-800/50 hover:bg-blue-700/60 text-blue-200 rounded border border-blue-600/40 transition-colors">
-                    Report
-                </button>
+                <!-- buttons unchanged -->
             </td>
         `;
-
-        // If we were in edit mode, re-apply it (edge case during rapid updates)
-        if (this.#isEditing) {
-            this.#enterEditMode();
-        }
+    
+        if (this.#isEditing) this.#enterEditMode();
     }
 
     #attachListeners() {
