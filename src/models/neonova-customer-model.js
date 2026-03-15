@@ -1,4 +1,4 @@
-class NeonovaCustomer {
+class NeonovaCustomerModel {
     constructor(radiusUsername, friendlyName = '') {
         this.radiusUsername = radiusUsername.trim();
         this.friendlyName = (friendlyName.trim() || radiusUsername.trim());
