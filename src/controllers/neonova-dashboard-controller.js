@@ -235,31 +235,29 @@ class NeonovaDashboardController {
     }
 
     async poll() {
-        if (!this._initialized || !this.model.getCustomersArray()?.length || this.model.isPollingPaused) {
+        if (!this._initialized || this.customerControllers.size === 0 || this.model.isPollingPaused) {
             return;
         }
     
         const pollStatusEl = this.view?.panel?.querySelector('#pollStatus');
         if (pollStatusEl) pollStatusEl.textContent = 'Fetching...';
     
-        for (const customer of this.model.getCustomersArray()) {
-            let ctrl = this.getCustomerController(customer.radiusUsername);
-            if (!ctrl) {
-                // Safety: recreate if missing (should not happen)
-                this.createCustomerController(customer);
-                ctrl = this.getCustomerController(customer.radiusUsername);
-            }
+        for (const ctrl of this.customerControllers.values()) {
             try {
-                await this.updateCustomerStatus(customer);
+                await this.updateCustomerStatus(ctrl.model);  // pass ctrl.model (the live object)
+                ctrl.view.update();  // refresh this row with new status/duration
             } catch (err) {
-                customer.update('Error', 0);
+                console.error(`Poll error for ${ctrl.radiusUsername}:`, err);
+                ctrl.model.update('Error', 0);
+                ctrl.view.update();
             }
         }
     
         await this.save();
-        if (this.view) this.rebuildTable();
+        this.rebuildTable();  // or just header if you prefer targeted updates
+    
         if (pollStatusEl) pollStatusEl.textContent = 'Last update: ' + new Date().toLocaleTimeString();
-
+    
         this.model.lastUpdatedDisplay = new Date().toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
