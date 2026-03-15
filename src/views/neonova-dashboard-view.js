@@ -6,7 +6,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.createElements();
     }
 
-getHeaderHTML() {
+    getHeaderHTML() {
         const pollIcon = this.controller.model.isPollingPaused ? 'fa-play' : 'fa-pause';
         const pollText = this.controller.model.isPollingPaused ? 'Resume' : 'Pause';
         const interval = this.controller.model.pollingIntervalMinutes;
@@ -201,6 +201,29 @@ getHeaderHTML() {
         this.render();
     }
 
+    clearRows() {
+        const tbody = this.panel.querySelector('#customer-table-body');
+        if (tbody) tbody.replaceChildren();  // modern, clean (or innerHTML = '')
+    }
+    
+    appendRow(trElement) {
+        const tbody = this.panel.querySelector('#customer-table-body');
+        if (tbody && trElement instanceof HTMLElement) {
+            tbody.appendChild(trElement);
+        }
+    }
+    
+    setRows(rowElements) {
+        this.clearRows();
+        if (!Array.isArray(rowElements)) return;
+        const fragment = document.createDocumentFragment();
+        rowElements.forEach(tr => {
+            if (tr instanceof HTMLElement) fragment.appendChild(tr);
+        });
+        const tbody = this.panel.querySelector('#customer-table-body');
+        if (tbody) tbody.appendChild(fragment);
+    }
+
     attachHeaderListeners() {
         // Polling toggle
         const pollBtn = this.header.querySelector('#poll-toggle-btn');
@@ -232,62 +255,6 @@ getHeaderHTML() {
 
         // Minimize button
         this.header.querySelector('#minimize-btn')?.addEventListener('click', () => this.toggleMinimize());
-    }
-
-    attachRowListeners() {
-        // Remove, Report, Friendly-name editing – same as before
-        this.panel.querySelectorAll('.remove-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const username = btn.dataset.username;
-                if (username) this.controller.remove(username);
-            });
-        });
-
-        this.panel.querySelectorAll('.report-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const username = btn.dataset.username;
-                const customer = this.controller.model.customers.find(c => c.radiusUsername === username);
-                if (customer) {
-                    const reportOrderController = new NeonovaReportOrderController(username, customer.friendlyName || username);
-                    reportOrderController.start();
-                }
-            });
-        });
-
-        this.panel.querySelectorAll('.friendly-name').forEach(cell => {
-            if (cell.dataset.editable === 'true') return;
-            cell.dataset.editable = 'true';
-            cell.style.cursor = 'pointer';
-            cell.title = 'Click to edit friendly name (blank to reset to username)';
-
-            cell.addEventListener('click', () => {
-                if (cell.querySelector('input')) return;
-                const username = cell.dataset.username;
-                const currentDisplay = cell.textContent.trim();
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = currentDisplay;
-                input.style.cssText = 'width:100%; box-sizing:border-box; padding:2px 4px; font-size:inherit; background:#09090b; color:inherit; border:1px solid #22ff88; border-radius:6px;';
-                cell.innerHTML = '';
-                cell.appendChild(input);
-                input.focus(); input.select();
-
-                const save = () => {
-                    const newName = input.value.trim();
-                    const customer = this.controller.model.customers.find(c => c.radiusUsername === username);
-                    if (customer) {
-                        customer.friendlyName = newName || null;
-                        cell.textContent = customer.friendlyName || customer.radiusUsername;
-                    }
-                };
-
-                input.addEventListener('blur', save);
-                input.addEventListener('keydown', e => {
-                    if (e.key === 'Enter') { e.preventDefault(); save(); }
-                    if (e.key === 'Escape') { cell.textContent = currentDisplay; }
-                });
-            });
-        });
     }
 
     updatePollingButton(btn) {
@@ -360,41 +327,11 @@ getHeaderHTML() {
         this.panel.classList.remove('minimized');
     }
 
-    // ====================== RENDER ======================
+    // ====================== RENDER ===================
     render() {
-        const tbody = this.panel.querySelector('#customer-table-body');
-        if (!tbody) return;
-
-        let rows = '';
-        this.controller.model.customers.forEach(c => {
-            const isConnected = c.status === 'Connected';
-            const durationText = c.getDurationStr ? c.getDurationStr() : '0s';
-            rows += `
-                <tr class="hover:bg-zinc-800 transition group">
-                    <td class="friendly-name px-6 py-4 font-medium text-zinc-100" data-username="${c.radiusUsername}">
-                        ${c.friendlyName || c.radiusUsername}
-                    </td>
-                    <td class="px-6 py-4 font-mono text-zinc-400">${c.radiusUsername}</td>
-                    <td class="px-6 py-4">
-                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-xs font-semibold ${isConnected ? 'bg-emerald-500' : 'bg-red-500'} text-white">
-                            <span class="w-2 h-2 rounded-full bg-current"></span>
-                            ${c.status}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 font-mono ${isConnected ? 'text-emerald-400' : 'text-red-400'}">
-                        ${durationText}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <button class="remove-btn text-zinc-400 hover:text-red-400 px-3 py-1 text-sm" data-username="${c.radiusUsername}">Remove</button>
-                        <button class="report-btn ml-3 bg-emerald-600 hover:bg-emerald-500 px-5 py-2 rounded-2xl text-xs font-medium text-white" data-username="${c.radiusUsername}">Report</button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        tbody.innerHTML = rows;
-        this.attachRowListeners();
-        this.updateHeader();   // ← now also pulls the clean model value
+        // No more row generation here
+        this.updateHeader();          // keep — updates polling button, last-updated, etc.
+        this.updateLastUpdated();     // if separate; or fold into updateHeader()
     }
 
     // ====================== TOGGLE (now pure morph – no duplicate DOM, no black box) ======================
