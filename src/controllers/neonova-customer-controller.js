@@ -1,11 +1,10 @@
 // src/controllers/neonova-customer-controller.js
 
 class NeonovaCustomerController {
-    constructor(customer, dashboardController) {
-        if (!(customer instanceof NeonovaCustomer)) {
-            throw new Error('NeonovaCustomerController requires a NeonovaCustomer instance');
-        }
-        this.customer = customer;
+    #model;
+
+    constructor(radiusUsername, friendlyName = null, dashboardController) {
+        this.#model = new NeonovaCustomer(radiusUsername, friendlyName);
         this.dashboardController = dashboardController;
         this.view = new NeonovaCustomerView(this);
     }
@@ -14,8 +13,34 @@ class NeonovaCustomerController {
         return this.customer;
     }
 
-    get radiusUsername() {
-        return this.customer.radiusUsername;
+    // For runtime use
+    get model() { return this.#model; }
+    
+    get radiusUsername() { return this.#model.radiusUsername; }
+    
+    get friendlyName() { return this.#model.friendlyName; }
+
+        // Serialization for model storage
+    toJSON() {
+        return {
+            radiusUsername: this.#model.radiusUsername,
+            friendlyName: this.#model.friendlyName,
+            status: this.#model.status,
+            durationSec: this.#model.durationSec,
+            lastEventTime: this.#model.lastEventTime?.toISOString(),
+            // add any other fields that need persisting
+        };
+    }
+
+    // Rehydrate from stored JSON
+    static fromJSON(json, dashboardController) {
+        const ctrl = new NeonovaCustomerController(json.radiusUsername, json.friendlyName, dashboardController);
+        ctrl.#model.status = json.status || 'Unknown';
+        ctrl.#model.durationSec = json.durationSec || 0;
+        ctrl.#model.lastEventTime = json.lastEventTime ? new Date(json.lastEventTime) : null;
+        // restore any other fields
+        ctrl.view.update();  // refresh row with loaded data
+        return ctrl;
     }
 
     // Called during polling when fresh data arrives for this customer
