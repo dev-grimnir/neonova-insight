@@ -1,7 +1,7 @@
 // src/views/neonova-customer-view.js
 
 class NeonovaCustomerView extends BaseNeonovaView {
-    #controller;        // NeonovaCustomerController instance
+    #controller;        
     #tr;                // the <tr> this view fully owns
     #isEditing = false;
 
