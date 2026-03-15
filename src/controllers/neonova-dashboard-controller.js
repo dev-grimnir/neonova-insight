@@ -27,6 +27,15 @@ class NeonovaDashboardController {
         return this.customerControllers.get(username);
     }
 
+    rebuildTable() {
+        const rows = [];
+        for (const ctrl of this.customerControllers.values()) {
+            const row = ctrl.getRowElement();
+            if (row) rows.push(row);
+        }
+            this.view.setRows(rows);
+    }
+
     startPolling() {
         if (this.pollInterval) return;
         this.poll();
