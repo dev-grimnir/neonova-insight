@@ -1,5 +1,6 @@
 class NeonovaDashboardController {
     constructor() {
+        this.customerControllers = new Map();
         this.model = new NeonovaDashboardModel();
         this.masterPassphrase = null;    
         this._initialized = false;
@@ -14,7 +15,6 @@ class NeonovaDashboardController {
         // If paused, don't start polling yet
         if (!this.model.isPollingPaused) this.startPolling();
         this.view = new NeonovaDashboardView(this);
-        this.customerControllers = new Map();
     }
 
     createCustomerController(customer) {
