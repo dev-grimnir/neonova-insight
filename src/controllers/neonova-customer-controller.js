@@ -62,8 +62,9 @@ class NeonovaCustomerController {
     }
 
     launchReport() {
-        new NeonovaReportOrderController(this.model);
-        // or pass this.radiusUsername, this.friendlyName, etc. if needed
+        const username = this.#model.radiusUsername;
+        const friendlyName = this.#model.friendlyName || username;  // fallback if null/empty
+        new NeonovaReportOrderController(username, friendlyName);
     }
 
     updateFriendlyName(newName) {
