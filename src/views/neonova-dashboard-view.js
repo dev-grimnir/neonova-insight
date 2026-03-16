@@ -248,6 +248,12 @@ class NeonovaDashboardView extends BaseNeonovaView {
     }
 
     attachHeaderListeners() {
+        const privacyBtn = this.header.querySelector('#privacy-toggle-btn');
+        privacyBtn?.addEventListener('click', () => {
+            this.togglePrivacy();           // flips state + localStorage + applies blur
+            this.updatePrivacyButton(privacyBtn); // updates eye / eye-slash icon + tooltip
+        });
+        
         // Polling toggle
         const pollBtn = this.header.querySelector('#poll-toggle-btn');
         pollBtn?.addEventListener('click', () => {
