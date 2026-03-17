@@ -196,6 +196,13 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     filter: blur(5px);
                     transition: filter 300ms ease;
                 }
+
+                /* Reveal only the hovered row's sensitive cells */
+                .neonova-privacy-mode tr:hover td:nth-child(1),
+                .neonova-privacy-mode tr:hover td:nth-child(2) {
+                    filter: blur(0);
+                }
+                
                 .neonova-scroll::-webkit-scrollbar { width: 7px; }
                 .neonova-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
                 .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
