@@ -33,6 +33,21 @@ class NeonovaDashboardController {
             const row = ctrl.getRowElement();
             if (row) rows.push(row);
         }
+
+         // === SORT: Disconnected/Not Connected at the very top ===
+        rows.sort((a, b) => {
+            // Status is always the 3rd column (nth-child(3))
+            const aStatus = a.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+            const bStatus = b.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+    
+            const aDisconnected = aStatus !== 'Connected' && aStatus !== 'Connecting...';
+            const bDisconnected = bStatus !== 'Connected' && bStatus !== 'Connecting...';
+    
+            if (aDisconnected && !bDisconnected) return -1;   // disconnected first
+            if (!aDisconnected && bDisconnected) return 1;
+            return 0;   // keep original relative order inside each group (stable)
+        });
+        
             this.view.setRows(rows);
     }
 
