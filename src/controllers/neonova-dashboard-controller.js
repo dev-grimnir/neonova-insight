@@ -61,7 +61,7 @@ class NeonovaDashboardController {
         }
     }
 
-    setPollingInterval(minutes) {
+    async setPollingInterval(minutes) {
         minutes = Math.max(1, Math.min(60, parseInt(minutes) || 5));
         this.model.pollingIntervalMinutes = minutes;
         this.pollIntervalMs = this.model.pollingIntervalMinutes * 60 * 1000;
