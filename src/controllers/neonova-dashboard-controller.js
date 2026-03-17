@@ -173,29 +173,20 @@ class NeonovaDashboardController {
      *   4. Start polling and render
      */
     async initAsync() {
-        if (this._initialized) {
-            return;
-        }
+        if (this._initialized) return;
         this._initialized = true;
     
-        // Delegate ALL key setup to the static crypto controller
         await NeonovaCryptoController.initMasterKey();
     
-        // If this is the very first time (no remembered key), show passphrase modal exactly once
         if (!NeonovaCryptoController.hasMasterKey) {
             this.passphraseController = new NeonovaPassphraseController(this);
-            await this.passphraseController.show();   // only one modal
-        } else {
-            
+            await this.passphraseController.show();
         }
     
-        await this.load(); 
-        await this.model.loadSettings();  
-
-        // Use settings for polling
-        this.model.pollingIntervalMinutes = this.model.settings.pollingIntervalMinutes;
-        this.model.isPollingPaused = this.settings.pollingPaused;
-
+        await this.load();           // ← customers (still works, key is there)
+        await this.model.loadSettings();   // ← now in the model
+    
+        // NO MORE this.settings lines — the model already synced polling values
         if (!this.model.isPollingPaused) this.startPolling();
         if (this.view) this.rebuildTable();
     }
@@ -223,9 +214,6 @@ class NeonovaDashboardController {
                 const ctrl = NeonovaCustomerController.fromJSON(json, this);
                 this.customerControllers.set(json.radiusUsername, ctrl);
             }
-    
-            this.model.pollingIntervalMinutes = parsed.pollingIntervalMinutes || 1;
-            this.model.isPollingPaused = parsed.isPollingPaused || false;
             
         } catch (e) {
             alert("Decryption failed. Clearing everything.");
