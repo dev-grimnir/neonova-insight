@@ -1,7 +1,6 @@
 class NeonovaDashboardView extends BaseNeonovaView {
     constructor(controller) {
         super();
-        this.privacyEnabled = localStorage.getItem('neonova-privacy-enabled') === 'true';
         this.controller = controller;
         this.isMinimized = true;
         this.createElements();
@@ -400,13 +399,13 @@ class NeonovaDashboardView extends BaseNeonovaView {
     applyPrivacyBlur() {
         const tbody = this.panel.querySelector('#customer-table-body');
         if (tbody) {
-            tbody.classList.toggle('neonova-privacy-mode', this.privacyEnabled);
+            tbody.classList.toggle('neonova-privacy-mode', this.controller.settings.privacyEnabled);
         }
     }
     
     togglePrivacy() {
         this.privacyEnabled = !this.privacyEnabled;
-        localStorage.setItem('neonova-privacy-enabled', this.privacyEnabled.toString());
+        this.controller.saveSettings();
         this.applyPrivacyBlur();
         
         const btn = this.header.querySelector('#privacy-toggle-btn');
@@ -415,6 +414,8 @@ class NeonovaDashboardView extends BaseNeonovaView {
     
     updatePrivacyButton(btn) {
         if (!btn) return;
+
+        const enabled = this.controller.settings.privacyEnabled;
         
         if (this.privacyEnabled) {
             btn.textContent = 'Privacy On';
