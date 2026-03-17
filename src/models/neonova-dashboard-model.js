@@ -112,7 +112,7 @@ class NeonovaDashboardModel {
     async saveSettings() {
         try {
             const jsonStr = JSON.stringify(this.settings);
-            const encrypted = NeonovaCryptoController.encryptData(jsonStr);
+            const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
             localStorage.setItem('novaDashboardSettings', encrypted);
         } catch (e) {
             console.error("[Settings] Encryption failed", e);
