@@ -40,7 +40,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 border: 'border-emerald-700/50',
                 dot: 'bg-emerald-400'
             },
-            'Not Connected': {
+            'Disonnected': {
                 bg: 'bg-red-900/40',
                 text: 'text-red-300',
                 border: 'border-red-700/50',
