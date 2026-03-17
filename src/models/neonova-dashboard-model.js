@@ -37,14 +37,14 @@ class NeonovaDashboardModel {
     }
 
     // Polling settings
-    setPollingInterval(minutes) {
+    async setPollingInterval(minutes) {
         const safe = Math.max(1, Math.min(60, Number(minutes)));
         this.pollingIntervalMinutes = safe;
         this.settings.pollingIntervalMinutes = safe;
         await this.saveSettings();
     }
 
-    togglePolling() {
+    async togglePolling() {
         this.isPollingPaused = !this.isPollingPaused;
         this.settings.pollingPaused = this.isPollingPaused;
         await this.saveSettings(); 
