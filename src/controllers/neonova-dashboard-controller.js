@@ -193,7 +193,7 @@ class NeonovaDashboardController {
         await this.model.loadSettings();  
 
         // Use settings for polling
-        this.model.pollingIntervalMinutes = this.settings.pollingIntervalMinutes;
+        this.model.pollingIntervalMinutes = this.model.settings.pollingIntervalMinutes;
         this.model.isPollingPaused = this.settings.pollingPaused;
 
         if (!this.model.isPollingPaused) this.startPolling();
