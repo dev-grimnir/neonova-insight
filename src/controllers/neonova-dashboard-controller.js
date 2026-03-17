@@ -6,10 +6,7 @@ class NeonovaDashboardController {
         this._initialized = false;
         this.passphraseController = null;
         this.initAsync();
-        // Load persisted polling interval (default 1 min) and paused state (default false)
-        this.model.pollingIntervalMinutes = parseInt(localStorage.getItem('novaPollingIntervalMinutes')) || 1;
-        this.model.isPollingPaused = localStorage.getItem('novaPollingPaused') === 'true';  // string 'true' or false
-
+        
         this.pollIntervalMs = this.model.pollingIntervalMinutes * 60 * 1000;
 
         // If paused, don't start polling yet
@@ -124,8 +121,7 @@ class NeonovaDashboardController {
         this.model.pollingIntervalMinutes = minutes;
         this.pollIntervalMs = this.model.pollingIntervalMinutes * 60 * 1000;
         this.saveSettings();
-        localStorage.setItem('novaPollingIntervalMinutes', this.model.pollingIntervalMinutes.toString());
-        console.log(`[NeonovaDashboardController.setPollingInterval] Saved new interval: ${this.model.pollingIntervalMinutes} minutes`);
+        
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
             this.pollInterval = setInterval(() => this.poll(), this.model.pollingIntervalMinutes * 60 * 1000);
