@@ -85,7 +85,7 @@ class NeonovaDashboardController {
      * 
      * This ensures consistent state saving (paused or not) — original only saved on resume.
      */
-    togglePolling() {
+    async togglePolling() {
         // Flip the paused flag
         this.model.isPollingPaused = !this.model.isPollingPaused;
 
