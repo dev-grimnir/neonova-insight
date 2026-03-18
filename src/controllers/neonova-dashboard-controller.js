@@ -363,7 +363,7 @@ class NeonovaDashboardController {
             let durationSeconds = Math.floor((Date.now() - eventMs) / 1000);
             if (durationSeconds < 0) durationSeconds = 0;
 
-            const status = latest.status === 'Start' ? 'Connected' : 'Not Connected';
+            const status = latest.status === 'Start' ? 'Connected' : 'Disconnected';
 
             const isNew = customer.lastEventTime === null || eventMs > customer.lastEventTime;
 
