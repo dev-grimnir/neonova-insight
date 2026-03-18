@@ -24,28 +24,63 @@ class NeonovaDashboardController {
         return this.customerControllers.get(username);
     }
 
+    #parseDurationToSeconds(durationStr) {
+        if (!durationStr || durationStr === '—' || durationStr.includes('<1min')) {
+            return 30;  // treat <1min as ~30s so very new sessions sort near top
+        }
+    
+        let totalSeconds = 0;
+        const parts = durationStr.match(/(\d+)([dhms])/g) || [];
+    
+        for (const part of parts) {
+            const num = parseInt(part, 10);
+            const unit = part.slice(-1);
+    
+            if (unit === 'd') totalSeconds += num * 86400;
+            else if (unit === 'h') totalSeconds += num * 3600;
+            else if (unit === 'm') totalSeconds += num * 60;
+            else if (unit === 's') totalSeconds += num;
+        }
+    
+        return totalSeconds || 0;
+    }
+
     rebuildTable() {
         const rows = [];
         for (const ctrl of this.customerControllers.values()) {
             const row = ctrl.getRowElement();
             if (row) rows.push(row);
         }
-
-         // === SORT: Disconnected/Not Connected at the very top ===
+    
         rows.sort((a, b) => {
-            // Status is always the 3rd column (nth-child(3))
+            // Primary: disconnected first
             const aStatus = a.querySelector('td:nth-child(3)')?.textContent.trim() || '';
             const bStatus = b.querySelector('td:nth-child(3)')?.textContent.trim() || '';
     
             const aDisconnected = aStatus !== 'Connected' && aStatus !== 'Connecting...';
             const bDisconnected = bStatus !== 'Connected' && bStatus !== 'Connecting...';
     
-            if (aDisconnected && !bDisconnected) return -1;   // disconnected first
-            if (!aDisconnected && bDisconnected) return 1;
-            return 0;   // keep original relative order inside each group (stable)
+            if (aDisconnected !== bDisconnected) {
+                return aDisconnected ? -1 : 1;
+            }
+    
+            // Secondary: among connected rows, shortest duration first
+            if (!aDisconnected) {
+                // Duration is always the 4th column (nth-child(4))
+                const aDurationCell = a.querySelector('td:nth-child(4)')?.textContent.trim() || '';
+                const bDurationCell = b.querySelector('td:nth-child(4)')?.textContent.trim() || '';
+    
+                // Convert to seconds (handle "<1min", "2d 3h 45m", etc.)
+                const aSeconds = this.#parseDurationToSeconds(aDurationCell) || 0;
+                const bSeconds = this.#parseDurationToSeconds(bDurationCell) || 0;
+    
+                return aSeconds - bSeconds;  // ascending = shortest first
+            }
+    
+            return 0;  // preserve original order within same category
         });
-        
-            this.view.setRows(rows);
+    
+        this.view.setRows(rows);
     }
 
     startPolling() {
