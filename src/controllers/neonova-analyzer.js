@@ -348,7 +348,7 @@ class NeonovaAnalyzer {
             ? (rangeEnd.getTime() - rangeStart.getTime()) / 1000 
             : 1;
 
-        const percentConnected = totalRangeSec > 0 
+        let percentConnected = totalRangeSec > 0 
             ? (totalConnectedSec / totalRangeSec * 100).toFixed(2) 
             : 'N/A';
 
