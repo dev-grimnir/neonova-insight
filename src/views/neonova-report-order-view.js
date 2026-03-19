@@ -188,11 +188,18 @@ class NeonovaReportOrderView extends BaseNeonovaView {
         };
 
         // Calculate defaults
-        const oneYearAgo = new Date(today);
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const defaultStartYear = oneYearAgo.getFullYear();
-        const defaultStartMonth = oneYearAgo.getMonth() + 1;
-        let defaultStartDay = oneYearAgo.getDate();  // Will be clamped below if needed
+        / Calculate defaults — 11 months ago to match actual RADIUS data limit
+        const elevenMonthsAgo = new Date(today);
+        elevenMonthsAgo.setMonth(elevenMonthsAgo.getMonth() - 11);
+        
+        // Safety clamp (in case month math overflows on edge dates like Jan 31)
+        if (elevenMonthsAgo > today) {
+            elevenMonthsAgo.setFullYear(elevenMonthsAgo.getFullYear() - 1);
+        }
+        
+        const defaultStartYear  = elevenMonthsAgo.getFullYear();
+        const defaultStartMonth = elevenMonthsAgo.getMonth() + 1;
+        let defaultStartDay     = elevenMonthsAgo.getDate();
 
         // Start date = exactly one year ago (clamped)
         const sy = this.container.querySelector('#start-year');
