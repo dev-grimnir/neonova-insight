@@ -21,3 +21,11 @@ function getSessionBonus(metricMin) {
     const metricHours = parseFloat(metricMin) / 60 || 0;
     return 25 * Math.tanh(metricHours / 6);
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        formatDuration,
+        getSessionBonus
+        // add any other functions from this file if needed later
+    };
+}
