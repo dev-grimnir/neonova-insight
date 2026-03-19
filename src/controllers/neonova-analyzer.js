@@ -6,9 +6,12 @@ class NeonovaAnalyzer {
      * @param {Date|null} requestedEnd   - optional, from the date picker
      */
     static computeMetrics(cleanedEntries, requestedStart = null, requestedEnd = null) {
+        console.log(`[NeonovaAnalyzer] computeMetrics called | requestedStart=${requestedStart?.toISOString() || 'null'} | requestedEnd=${requestedEnd?.toISOString() || 'null'}`);
+        
         const normalized = this.#normalizeInput(cleanedEntries);
 
         if (normalized.entries.length === 0) {
+            console.log(`[NeonovaAnalyzer] computeMetrics → EMPTY set, returning {} (as before)`);
             return {};
         }
 
@@ -23,6 +26,8 @@ class NeonovaAnalyzer {
         const rawConnectedSec = counters.sessionSeconds.reduce((a, b) => a + b, 0) || 0;
         const totalConnectedSec = rawConnectedSec + leading.leadingConnectedSec + trailing.trailingConnectedSec;
 
+        console.log(`[NeonovaAnalyzer] Raw connected from sessions: ${rawConnectedSec}s | Leading credit: ${leading.leadingConnectedSec}s | Trailing credit: ${trailing.trailingConnectedSec}s | FINAL totalConnectedSec: ${totalConnectedSec}s`);
+        
         // Feed everything into uptime (now respects requested range + gaps)
         const uptimeMetrics = this.#computeUptimeMetrics(
             counters.sessionSeconds,
@@ -63,49 +68,29 @@ class NeonovaAnalyzer {
     }
 
     static #determineLeadingConnectedTime(entries, requestedStart) {
-        if (!requestedStart || entries.length === 0) return { leadingConnectedSec: 0 };
+        console.log(`[NeonovaAnalyzer] #determineLeadingConnectedTime | requestedStart=${requestedStart?.toISOString() || 'null'} | firstEvent=${entries[0]?.dateObj?.toISOString() || 'none'} | status=${entries[0]?.status || 'none'}`);
+
+        if (!requestedStart || entries.length === 0) {
+            console.log(`[NeonovaAnalyzer] Leading → no credit (no range or no entries)`);
+            return { leadingConnectedSec: 0 };
+        }
 
         const rangeStartMs = requestedStart.getTime();
         const firstMs = entries[0].dateObj.getTime();
 
-        if (firstMs <= rangeStartMs) return { leadingConnectedSec: 0 };
+        if (firstMs <= rangeStartMs) {
+            console.log(`[NeonovaAnalyzer] Leading → no gap (first event already inside range)`);
+            return { leadingConnectedSec: 0 };
+        }
 
         const gapSec = (firstMs - rangeStartMs) / 1000;
 
-        // Your exact rule: first event is a Stop → credit the entire leading gap as up
-        return entries[0].status === "Stop"
-            ? { leadingConnectedSec: gapSec }
-            : { leadingConnectedSec: 0 };
-    }
+        const credit = entries[0].status === "Stop"
+            ? gapSec
+            : 0;
 
-    static #determineTrailingConnectedTime(entries, requestedEnd) {
-        if (!requestedEnd || entries.length === 0) return { trailingConnectedSec: 0 };
-
-        const rangeEndMs = requestedEnd.getTime();
-        const lastMs = entries[entries.length - 1].dateObj.getTime();
-
-        if (lastMs >= rangeEndMs) return { trailingConnectedSec: 0 };
-
-        const gapSec = (rangeEndMs - lastMs) / 1000;
-
-        // Your exact rule: last event = Stop → remaining time is disconnected; otherwise connected
-        return {
-            trailingConnectedSec: entries[entries.length - 1].status === "Stop" ? 0 : gapSec
-        };
-    }
-
-    static #formatDuration(sec) {
-        if (sec <= 0) return '0s';
-        const d = Math.floor(sec / 86400);
-        const h = Math.floor((sec % 86400) / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = Math.round(sec % 60);
-        let parts = [];
-        if (d > 0) parts.push(d + 'd');
-        if (h > 0) parts.push(h + 'h');
-        if (m > 0) parts.push(m + 'm');
-        if (s > 0 || parts.length === 0) parts.push(s + 's');
-        return parts.join(' ');
+        console.log(`[NeonovaAnalyzer] Leading gap = ${gapSec.toFixed(0)}s | First event is ${entries[0].status} → credit ${credit.toFixed(0)}s as connected`);
+        return { leadingConnectedSec: credit };
     }
     
     static #getSessionBonus(metricMin) {
@@ -328,18 +313,20 @@ class NeonovaAnalyzer {
             ? (rangeEnd.getTime() - rangeStart.getTime()) / 1000 
             : 1;
 
-        const totalDisconnectedSec = totalRangeSec - totalConnectedSec;
         const percentConnected = totalRangeSec > 0 
-            ? (totalConnectedSec / totalRangeSec * 100).toFixed(1) 
+            ? (totalConnectedSec / totalRangeSec * 100).toFixed(2) 
             : 'N/A';
-        const daysSpanned = totalRangeSec / 86400;
+
+        const daysSpanned = (totalRangeSec / 86400).toFixed(2);
+
+        console.log(`[NeonovaAnalyzer] #computeUptimeMetrics → Using range ${rangeStart?.toISOString()} to ${rangeEnd?.toISOString()} | totalRangeSec=${totalRangeSec.toFixed(0)}s (${daysSpanned} days) | totalConnectedSec=${totalConnectedSec.toFixed(0)}s | uptime=${percentConnected}%`);
 
         return { 
             totalConnectedSec, 
-            totalDisconnectedSec, 
+            totalDisconnectedSec: totalRangeSec - totalConnectedSec, 
             percentConnected, 
             daysSpanned,
-            firstDate: rangeStart,   // so monitoringPeriod string also shows requested range
+            firstDate: rangeStart,
             lastDate: rangeEnd
         };
     }
