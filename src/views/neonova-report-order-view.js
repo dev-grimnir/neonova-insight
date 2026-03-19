@@ -188,7 +188,7 @@ class NeonovaReportOrderView extends BaseNeonovaView {
         };
 
         // Calculate defaults
-        / Calculate defaults — 11 months ago to match actual RADIUS data limit
+        // Calculate defaults — 11 months ago to match actual RADIUS data limit
         const elevenMonthsAgo = new Date(today);
         elevenMonthsAgo.setMonth(elevenMonthsAgo.getMonth() - 11);
         
