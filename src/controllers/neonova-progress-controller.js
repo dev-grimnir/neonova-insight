@@ -41,10 +41,8 @@ class NeonovaProgressController {
             // 3. Clean/dedupe
             const sanitizedEntries = NeonovaCollector.cleanEntries(rawEntries);
 
-            const metrics = NeonovaAnalyzer.computeMetrics(sanitizedEntries, startDate, endDate);
-
             // 4. Analyze & compute metrics
-            const metrics = NeonovaAnalyzer.computeMetrics(sanitizedEntries);
+            const metrics = NeonovaAnalyzer.computeMetrics(sanitizedEntries, startDate, endDate);
 
             // 5. Success: tell view to finish (opens report tab + closes modal)
             progressView.finish({
