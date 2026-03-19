@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { NeonovaAnalyzer } from '../src/controllers/neonova-analyzer.js';
+import  NeonovaAnalyzer from '../src/controllers/neonova-analyzer.js';
 
 describe('NeonovaAnalyzer', () => {
     let analyzer;                    // ← we can put shared setup here if needed
