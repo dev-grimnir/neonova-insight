@@ -10,6 +10,16 @@ class NeonovaAnalyzer {
         
         const normalized = this.#normalizeInput(cleanedEntries);
 
+        if (requestedStart && requestedEnd) {
+        const startMs = requestedStart.getTime();
+        const endMs   = requestedEnd.getTime();
+        const beforeCount = normalized.entries.length;
+        
+        normalized.entries = normalized.entries.filter(e => {
+            const ts = e.dateObj.getTime();
+            return ts >= startMs && ts <= endMs;
+        });
+
         if (normalized.entries.length === 0) {
             console.log(`[NeonovaAnalyzer] computeMetrics → EMPTY set, returning {} (as before)`);
             return {};
@@ -341,6 +351,7 @@ class NeonovaAnalyzer {
             ? (totalConnectedSec / totalRangeSec * 100).toFixed(2) 
             : 'N/A';
 
+        percentConnected = Math.min(100, percentConnected).toFixed(1);
         const daysSpanned = (totalRangeSec / 86400).toFixed(2);
 
         console.log(`[NeonovaAnalyzer] #computeUptimeMetrics → Using range ${rangeStart?.toISOString()} to ${rangeEnd?.toISOString()} | totalRangeSec=${totalRangeSec.toFixed(0)}s (${daysSpanned} days) | totalConnectedSec=${totalConnectedSec.toFixed(0)}s | uptime=${percentConnected}%`);
