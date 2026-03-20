@@ -372,11 +372,9 @@ class NeonovaDashboardController {
             }
 
             // No logs at all (even after 30 days) → safe default
-            console.log("NeonovaDashboardController.getLatestEntry() -> latest = " + latest);
             if (!latest) {
                 if (latest === null) {
                     customer.update('Account Not Found', 0);
-                    console.log(`[updateCustomerStatus] No logs found after 11-month lookback — set to 'Account Not Found': ${customer.radiusUsername}`);
                     this.view.showToast('Customer not found in RADIUS', {
                         type: 'error',
                         duration: 5000});

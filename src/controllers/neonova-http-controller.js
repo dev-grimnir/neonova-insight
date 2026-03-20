@@ -364,7 +364,6 @@ static async paginateReportLogs(username, startDate = null, endDate = null, onPr
             total = this.#extractTotalEntries(doc);
 
             if (total === null) {
-                console.warn('[NeonovaHTTPController] user not found.  Returning null');
                 return null;
             }
         }

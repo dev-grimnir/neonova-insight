@@ -43,7 +43,8 @@ class NeonovaAddCustomerView extends BaseNeonovaView {
                             <label class="block text-sm font-medium text-zinc-400 mb-1.5">RADIUS Username <span class="text-red-400">*</span></label>
                             <input id="radius-username" type="text" 
                                    class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 placeholder-zinc-500"
-                                   placeholder="username@domain.com" autocomplete="off">
+                                   placeholder="Valid Radius username" autocomplete="off">
+                               <div id="username-error" class="hidden mt-2 text-sm text-red-400"></div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-zinc-400 mb-1.5">Friendly Name (optional)</label>
@@ -127,8 +128,6 @@ class NeonovaAddCustomerView extends BaseNeonovaView {
             this._keyListener = null;
         }
 
-        
-
         const overlay = this.modal.querySelector('#add-customer-modal');
         const box = this.modal.querySelector('.transform');
 
@@ -142,4 +141,30 @@ class NeonovaAddCustomerView extends BaseNeonovaView {
             this.modal = null;
         }, 300);
     }
+
+    showError(msg) {
+        const errorEl = document.getElementById('username-error');
+        if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+            
+            // Optional: flash red border on input
+            const input = document.getElementById('radius-username');
+            if (input) input.classList.add('border-red-500');
+        } else {
+            console.warn("Username error element not found");
+            alert(msg); // only fallback if HTML is broken
+        }   
+    }
+
+    hideError() {
+        const errorEl = document.getElementById('username-error');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+            
+            const input = document.getElementById('radius-username');
+            if (input) input.classList.remove('border-red-500');
+        }
+}
 }
