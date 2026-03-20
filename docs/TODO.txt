@@ -1,0 +1,4 @@
+TODO:
+0: Modal base class
+1: Fix NeonovaProgressController hand off to NeonovaProgressView to create the NeonovaReportView MVC violation 
+3: Dashboard: on page refresh the dashboard doesn't update unti the interval tics or I hit refresh.
