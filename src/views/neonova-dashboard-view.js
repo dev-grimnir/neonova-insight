@@ -234,7 +234,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         });
 
         this._escListener = (e) => {
-            if (e.key === 'Escape' && !this.isMinimized) {
+            if (e.key === 'Escape' && !this.isMinimized && !this.controller.isModalActive()) {
                 e.preventDefault();
                 this.toggleMinimize();
             }
@@ -242,7 +242,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         document.addEventListener('keydown', this._escListener);
 
         this._outsideListener = (e) => {
-            if (this.isMinimized) return;
+            if (this.isMinimized || this.controller.isModalActive()) ) return;
             if (!this.panel.contains(e.target)) {
                 this.toggleMinimize();
             }
