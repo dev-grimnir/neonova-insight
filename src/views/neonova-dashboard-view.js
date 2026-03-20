@@ -242,7 +242,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         document.addEventListener('keydown', this._escListener);
 
         this._outsideListener = (e) => {
-            if (this.isMinimized || this.controller.isModalActive()) return;
+            if (this.isMinimized || this.controller.modalActive()) return;
             if (!this.panel.contains(e.target)) {
                 this.toggleMinimize();
             }
