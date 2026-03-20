@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovaSubscriber - Dashboard
 // @namespace    http://tampermonkey.net/
-// @version      23.45
+// @version      24.0
 // @description  Real-time customer modem connection dashboard (separate script)
 // @author       dev-grimnir
 // @match        https://admin.neonova.net/*
@@ -45,7 +45,6 @@
     (async () => {
         const dashboardController = new NeonovaDashboardController();
         await dashboardController.initAsync();   
-        console.log('✅ Neonova Dashboard with encryption loaded');
     })();
 })();
 
