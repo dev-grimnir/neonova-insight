@@ -10,7 +10,7 @@ class NeonovaDashboardController {
         this.view = new NeonovaDashboardView(this);
     }
 
-    modalActive(){
+    modalActive() {
         return this.modalActive;
     }
 
