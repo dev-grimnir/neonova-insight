@@ -1,15 +1,10 @@
-class NeonovaPassphraseView extends BaseNeonovaView {
+class NeonovaPassphraseView extends NeonovaBaseModalView {
     constructor(controller) {
-        super();
-        this.controller = controller;
-        this.modal = null;
-        this._keyCleanup = null;   // Will hold the Escape listener remover
+        super(controller);
     }
 
     show() {
-        if (this.modal) this.hide();
-
-       const html = `
+        const html = `
             <div id="passphrase-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] opacity-0 transition-opacity duration-300">
               <form autocomplete="off" onsubmit="return false;" class="w-full max-w-md mx-4">
                 <div class="bg-zinc-900 rounded-2xl shadow-2xl p-8 transform translate-y-12 transition-transform duration-300 border border-zinc-700">
@@ -37,19 +32,7 @@ class NeonovaPassphraseView extends BaseNeonovaView {
               </form>
             </div>`;
 
-        this.modal = document.createElement('div');
-        this.modal.innerHTML = html;
-        document.body.appendChild(this.modal);
-
-        // Bottom-slide-up + fade entrance (now matches the desired direction)
-        setTimeout(() => {
-            const overlay = this.modal.querySelector('#passphrase-modal');
-            // More reliable selector: direct child of overlay (avoids class fragility)
-            const box = this.modal.querySelector('#passphrase-modal > div');
-            if (overlay) overlay.classList.add('opacity-100');
-            if (box) box.classList.remove('translate-y-12');
-        }, 10);
-
+        super.createModal(html);
         this.attachListeners();
     }
 
@@ -69,14 +52,14 @@ class NeonovaPassphraseView extends BaseNeonovaView {
             this.controller.handleSubmit(passphrase, remember.checked);
         };
 
-        // Existing click listeners (unchanged)
+        // Click listeners (exactly as before)
         this.modal.querySelector('#unlock-btn').addEventListener('click', submit);
         this.modal.querySelector('#cancel-btn').addEventListener('click', () => this.controller.handleCancel());
         overlay.addEventListener('click', e => {
             if (e.target.id === 'passphrase-modal') this.controller.handleCancel();
         });
 
-        // Improved Enter support (keydown is more reliable than keypress)
+        // Enter key on input (exactly as before)
         input.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 console.log("[NeonovaPassphraseView.input.keydown] Enter pressed — submitting");
@@ -84,20 +67,14 @@ class NeonovaPassphraseView extends BaseNeonovaView {
                 submit();
             }
         });
+    }
 
-        // NEW: Escape key listener on document (modal-wide)
-        const escapeHandler = (e) => {
-            if (e.key === 'Escape') {
-                console.log("[NeonovaPassphraseView.escapeHandler] Escape pressed — cancelling");
-                this.controller.handleCancel();
-            }
-        };
-        document.addEventListener('keydown', escapeHandler);
-
-        // Store cleanup function
-        this._keyCleanup = () => {
-            document.removeEventListener('keydown', escapeHandler);
-        };
+    /**
+     * Escape now routes through the base (which calls this override).
+     * Keeps the exact same behavior as before.
+     */
+    onEscape() {
+        this.controller.handleCancel();
     }
 
     /**
@@ -107,7 +84,7 @@ class NeonovaPassphraseView extends BaseNeonovaView {
     showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'fixed top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-3.5 rounded-2xl shadow-2xl z-[10000] flex items-center gap-3 text-sm font-medium animate-fade-in';
-        toast.innerHTML = `⚠️ ${message}`;
+        toast.innerHTML = `Warning ${message}`;
         document.body.appendChild(toast);
 
         console.log(`[NeonovaPassphraseView.showToast] displayed: "${message}"`);
@@ -122,25 +99,6 @@ class NeonovaPassphraseView extends BaseNeonovaView {
     }
 
     hide() {
-        if (!this.modal) return;
-
-        // Cleanup keyboard listener first
-        if (this._keyCleanup) {
-            console.log("[NeonovaPassphraseView.hide] cleaning up Escape listener");
-            this._keyCleanup();
-            this._keyCleanup = null;
-        }
-
-        const overlay = this.modal.querySelector('#passphrase-modal');
-        // Consistent reliable selector
-        const box = this.modal.querySelector('#passphrase-modal > div');
-
-        if (overlay) overlay.classList.remove('opacity-100');
-        if (box) box.classList.add('translate-y-12');  // Slide back down on exit
-
-        setTimeout(() => {
-            if (this.modal?.parentNode) this.modal.parentNode.removeChild(this.modal);
-            this.modal = null;
-        }, 300);
+        super.hide();
     }
 }
