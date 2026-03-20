@@ -7,10 +7,10 @@ class NeonovaDashboardController {
         this.passphraseController = null;
         this.initAsync();
         
-        this.pollIntervalMs = this.model.pollingIntervalMinutes * 60 * 1000;
+        //this.pollIntervalMs = this.model.pollingIntervalMinutes * 60 * 1000;
 
         // If paused, don't start polling yet
-        if (!this.model.isPollingPaused) this.startPolling();
+        //if (!this.model.isPollingPaused) this.startPolling();
         this.view = new NeonovaDashboardView(this);
     }
 
