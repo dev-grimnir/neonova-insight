@@ -107,6 +107,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
 
             if (e.target.closest('.remove-btn')) {
                 e.preventDefault();
+                e.stopPropagation();
                 this.#controller.remove();
             }
 
