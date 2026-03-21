@@ -236,7 +236,7 @@ class NeonovaDashboardController {
         // NO MORE this.settings lines — the model already synced polling values
         if (!this.model.isPollingPaused) this.startPolling();
         if (this.view) this.rebuildTable();
-        this.attachModalListeners();
+        this.#attachModalListeners();
     }
 
     /**
