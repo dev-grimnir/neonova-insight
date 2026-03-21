@@ -241,11 +241,19 @@ class NeonovaDashboardView extends BaseNeonovaView {
         };
         document.addEventListener('keydown', this.escListener);
 
-        this.outsideListener = (e) => {
-            if (this.isMinimized || this.controller.isModalActive()) return;
-            if (!this.panel.contains(e.target)) {
-                this.toggleMinimize();
+        this._outsideListener = (e) => {
+            console.log('[OutsideListener] Click detected on:', e.target.tagName, e.target.className || e.target.id || '(no class/id)');
+            console.log('  - modalActive:', this.controller.isModalActive());
+            console.log('  - isMinimized:', this.isMinimized);
+            console.log('  - inside panel?', this.panel.contains(e.target));
+        
+            if (this.controller.isModalActive() || this.isMinimized || this.panel.contains(e.target)) {
+                console.log('  → Ignored (guard triggered)');
+                return;
             }
+        
+            console.log('  → Should minimize now');
+            this.toggleMinimize();
         };
         document.addEventListener('click', this._outsideListener);
 
