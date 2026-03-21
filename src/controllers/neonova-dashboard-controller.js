@@ -4,7 +4,7 @@ class NeonovaDashboardController {
         this.customerControllers = new Map();
         this.model = new NeonovaDashboardModel();
         this.masterPassphrase = null;    
-        this._initialized = false;
+        this.initialized = false;
         this.passphraseController = null;
         this.#modalActive = false;
         this.initAsync();
@@ -15,14 +15,14 @@ class NeonovaDashboardController {
         return this.modalActive;
     }
 
-    attachModalListeners() {
+    #attachModalListeners() {
         // Track modal state so dashboard never minimizes while anything is open
         document.addEventListener('neonova:modal-opened', () => {
-            this._modalActive = true;
+            this.#modalActive = true;
         });
 
         document.addEventListener('neonova:modal-closed', () => {
-            this._modalActive = false;
+            this.#modalActive = false;
         });
     }
 
@@ -220,8 +220,8 @@ class NeonovaDashboardController {
      *   4. Start polling and render
      */
     async initAsync() {
-        if (this._initialized) return;
-        this._initialized = true;
+        if (this.initialized) return;
+        this.initialized = true;
     
         await NeonovaCryptoController.initMasterKey();
     
@@ -289,7 +289,7 @@ class NeonovaDashboardController {
     }
 
     async poll() {
-        if (!this._initialized || !this.customerControllers || this.customerControllers.size === 0 || this.model.isPollingPaused) {
+        if (!this.initialized || !this.customerControllers || this.customerControllers.size === 0 || this.model.isPollingPaused) {
             return;
         }
     
