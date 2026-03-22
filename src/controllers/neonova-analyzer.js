@@ -6,8 +6,6 @@ class NeonovaAnalyzer {
      * @param {Date|null} requestedEnd   - optional, from the date picker
      */
     static computeMetrics(cleanedEntries, requestedStart = null, requestedEnd = null) {
-        console.log(`[NeonovaAnalyzer] computeMetrics called | requestedStart=${requestedStart?.toISOString() || 'null'} | requestedEnd=${requestedEnd?.toISOString() || 'null'}`);
-        
         const normalized = this.#normalizeInput(cleanedEntries);
 
         if (requestedStart && requestedEnd) {
@@ -36,10 +34,7 @@ class NeonovaAnalyzer {
 
         const rawConnectedSec = counters.sessionSeconds.reduce((a, b) => a + b, 0) || 0;
         const totalConnectedSec = rawConnectedSec + leading.leadingConnectedSec + trailing.trailingConnectedSec;
-
-        console.log(`[NeonovaAnalyzer] Raw connected from sessions: ${rawConnectedSec}s | Leading credit: ${leading.leadingConnectedSec}s | Trailing credit: ${trailing.trailingConnectedSec}s | FINAL totalConnectedSec: ${totalConnectedSec}s`);
         
-        // Feed everything into uptime (now respects requested range + gaps)
         const uptimeMetrics = this.#computeUptimeMetrics(
             counters.sessionSeconds,
             counters.firstDate,
@@ -49,7 +44,6 @@ class NeonovaAnalyzer {
             totalConnectedSec
         );
 
-        // Everything below is unchanged
         const peakMetrics = this.#computePeakMetrics(counters);
         const timeSinceLast = this.#computeTimeSinceLast(counters.lastDisconnectDate);
         const dailyAverages = this.#computeDailyAverages(counters.dailyCount);
