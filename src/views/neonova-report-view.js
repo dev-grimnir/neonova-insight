@@ -6,6 +6,11 @@ class NeonovaReportView extends BaseNeonovaView {
         this.friendlyName = this.model.getFriendlyName;
         this.metrics = this.model.getMetrics;
         this.longDisconnects = this.model.getLongDisconnects;
+
+        const reportHTML = reportView.generateReportHTML('');
+        const newTab = window.open('', '_blank');
+        newTab.document.write(reportHTML);
+        newTab.document.close();
     }
 
         generateLongDisconnectsHTML() {
