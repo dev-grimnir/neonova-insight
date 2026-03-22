@@ -9,7 +9,7 @@ class NeonovaReportOrderController {
 
     start() {
         // Controller creates its own view
-        this.view = new NeonovaReportOrderView(null, this.username, this.friendlyName);
+        this.view = new NeonovaReportOrderView(this, this.username, this.friendlyName);
 
         // Listen to the view's events
         this.view.addEventListener('quickReportRequested', (event) => {
