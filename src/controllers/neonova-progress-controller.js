@@ -49,8 +49,7 @@ class NeonovaProgressController {
                 username,
                 friendlyName,
                 metrics,
-                sanitizedEntries.length,
-                metrics.longDisconnects || []
+                sanitizedEntries.length
             );
 
             reportController.generateAndOpen();            
