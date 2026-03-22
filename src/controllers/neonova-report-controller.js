@@ -4,7 +4,7 @@ class NeonovaReportController {
             username,
             friendlyName,
             metrics,
-            entryCount,
+            length,
             longDisconnects,
             sanitizedEntries
         );
