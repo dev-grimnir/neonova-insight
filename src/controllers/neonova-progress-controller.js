@@ -21,8 +21,8 @@ class NeonovaProgressController {
      */
     async start(username, friendlyName, startDate = null, endDate = null, signal = null) {
         // 1. Create and show the progress view
-        const progressView = new NeonovaProgressView(username, friendlyName);
-        progressView.showModal();
+        const progressView = new NeonovaProgressView(this, username, friendlyName);
+        progressView.show();
 
         let rawEntries = [];
 
@@ -45,11 +45,20 @@ class NeonovaProgressController {
             const metrics = NeonovaAnalyzer.computeMetrics(sanitizedEntries, startDate, endDate);
 
             // 5. Success: tell view to finish (opens report tab + closes modal)
-            progressView.finish({
+            const reportHTML = NeonovaReportView.generateStandaloneHTML(
                 username,
                 friendlyName,
                 metrics,
-                entries: sanitizedEntries
+                sanitizedEntries.length,
+                metrics.longDisconnects || []
+            );
+            
+            const newTab = window.open('', '_blank');
+            newTab.document.write(reportHTML);
+            newTab.document.close();
+
+            progressView.markComplete();
+            
             });
         } catch (err) {
             if (err.name === 'AbortError') {
