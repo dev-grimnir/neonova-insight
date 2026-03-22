@@ -126,7 +126,7 @@ class NeonovaReportOrderView extends NeonovaBaseModalView {
         populate('#end-day', days, currentDay);
     }
 
-    attachListeners() {
+    attachListeners() {        
         const modalEl = this.modal.querySelector('#report-order-modal');
         const closeBtn = this.modal.querySelector('#close-btn');
         const generateBtn = this.modal.querySelector('#generate-custom');
@@ -160,10 +160,7 @@ class NeonovaReportOrderView extends NeonovaBaseModalView {
             const endYear = this.modal.querySelector('#end-year').value;
             const endMonth = this.modal.querySelector('#end-month').value;
             const endDay = this.modal.querySelector('#end-day').value;
-
-            // Replace this line with your exact original controller call
             this.controller.handleGenerate(startYear, startMonth, startDay, endYear, endMonth, endDay);
-            // e.g. this.controller.generateReport(this.username, {start: ..., end: ...});
         });
     }
 
