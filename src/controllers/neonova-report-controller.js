@@ -1,5 +1,5 @@
 class NeonovaReportController {
-    this.model = null;
+    model = null;
     constructor(username, friendlyName, metrics, length, longDisconnects) {
         this.model = new NeonovaReportModel(
             username,
