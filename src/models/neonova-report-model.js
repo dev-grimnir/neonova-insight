@@ -8,6 +8,22 @@ class NeonovaReportModel {
         this.sanitizedEntries = sanitizedEntries;   // for future daily EKG feature
     }
 
+    getUsername() {
+        return this.username;
+    }
+
+    getFriendlyName() {
+        return this.friendlyName;
+    }
+
+    getMetrics() {
+        return this.metrics;
+    }
+
+    getLongDisconnects() {
+        return this.longDisconnects;
+    }
+
     get totalEntries() {
         return this.entryCount;
     }
