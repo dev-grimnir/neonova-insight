@@ -7,6 +7,8 @@ class NeonovaReportView extends BaseNeonovaView {
         this.metrics = this.model.getMetrics;
         this.longDisconnects = this.model.getLongDisconnects;
 
+        console.log("NeonovaReportView.constructor longDisconnects = " + this.longDisconnects);
+
         const reportHTML = this.generateReportHTML('');
         const newTab = window.open('', '_blank');
         newTab.document.write(reportHTML);
