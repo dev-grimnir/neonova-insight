@@ -5,7 +5,7 @@ class NeonovaReportController {
             friendlyName,
             metrics,
             length,
-            metrics.longDisconnects
+            metrics.longDisconnects || []
         );
 
         this.view = new NeonovaReportView(this.model);
