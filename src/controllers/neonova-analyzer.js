@@ -636,3 +636,7 @@ class NeonovaAnalyzer {
         return { rolling7Day, rollingLabels };
     }
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = NeonovaAnalyzer;
+}

@@ -6,8 +6,8 @@ A powerful Tampermonkey userscript suite for NeoNova admins (`admin.neonova.net`
 
 Built for admins, field techs, and small ISPs who need better visibility into modem flaps, uptime, and reconnect behavior.
 
-![Dashboard Screenshot](https://github.com/dev-grimnir/neonova-post-processor/blob/dev/screenshots/dashboard-ss.png)
-*(Live dashboard with polling controls, status table, and Add Customer modal)*
+![Dashboard Screenshot](https://github.com/dev-grimnir/neonova-post-processor/blob/main/screenshots/dashboard-ss.png)
+*(Live dashboard with polling controls, status table, and Add Customer modal – connected modems now sorted by shortest connection duration first)*
 
 ## Sample Interactive Report
 
@@ -21,7 +21,7 @@ Here's a real generated report from an 11 month (max length) monitoring period (
 </p>
 
 Or view the raw HTML directly:  
-[View raw sample report](https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/refs/heads/dev/screenshots/example_radius_report.html)
+[View raw sample report](https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/refs/heads/main/screenshots/example_radius_report.html)
 
 ## ✨ Current Features
 
@@ -29,6 +29,7 @@ Or view the raw HTML directly:
 - Real-time customer status polling (configurable interval)
 - Pause/Resume + manual Refresh
 - One-click **Add Customer** modal (no more inline form clutter)
+- **Connected modems automatically sorted by connection duration (shortest first)** – new in March 2026
 - Remove & Report buttons per customer
 - Clean, consistent UI with Tailwind styling
 
@@ -41,9 +42,11 @@ Or view the raw HTML directly:
 - Total results counted + duplicates ignored note restored
 
 ### Under the Hood
-- Fully refactored `NeonovaAnalyzer` (clean private helpers, heavily commented)
+- Fully modular MVC architecture (`src/{controllers, models, views, core, scripts}/`)
+- `NeonovaAnalyzer` refactored into clean private helpers with heavy comments
 - Stress-tested on massive accounts with over 100k results in one report
 - Zero console errors on normal use
+- Full test suite (Vitest) + architecture overview in [`docs/architecture.md`](docs/architecture.md)
 
 ## Security & Data Handling
 
@@ -68,7 +71,7 @@ In short: it just saves you from having to sit there clicking “Next” for 45 
 ### Persistent Storage (Encrypted)
 - The **only** data saved between sessions is your personal list of monitored customers (usernames, friendly names, and latest status).  
 - This data is stored in the browser’s `localStorage` and is **fully AES-256-GCM encrypted** on disk using the Web Crypto API.  
-- On first use you set a passphrase (or leave it blank to disable encryption). The key is remembered securely on your device for zero-prompt future visits.  
+- On first use you set a passphrase (the dashboard cannot be used without a passphrase). The key is remembered securely on your device for zero-prompt future visits.  
 - To force a re-prompt or wipe the key at any time: run `localStorage.removeItem('novaDashboardMasterKey')` in the console.
 
 ### No Persistent Logs or Reports
@@ -81,10 +84,10 @@ If you have any security, compliance, or operational questions, feel free to rea
 ## Installation
 
 1. Install **Tampermonkey** (Chrome / Firefox / Edge).
-2. Click these raw links — Tampermonkey will prompt to install:
+2. Click this raw link — Tampermonkey will prompt to install:
 
-   - **[NovaSubscriber Dashboard](https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/dev/src/scripts/NovaSubscriber-Dashboard.user.js)** ← Main script
-   - All supporting files are auto-required
+   - **[NeoNova Dashboard](https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/scripts/neonova-dashboard.user.js)** ← Main script  
+     (All supporting modules in `src/` are auto-`@require`d)
 
 3. Visit `https://admin.neonova.net` → log in → the dashboard panel appears automatically.
 
@@ -96,8 +99,9 @@ If you have any security, compliance, or operational questions, feel free to rea
 
 ## Recent Major Updates (2026)
 
-- Live dashboard with polling and Add Customer modal
-- Complete analyzer refactor (modular, testable, documented)
+- **Mar 17–18**: Merged PR #23 – connected modems now sorted by duration (shortest first) + reporting fixes
+- Live dashboard with polling controls and Add Customer modal
+- Complete modular refactor (`src/{controllers, models, views, scripts, core}/` structure – fully testable & documented)
 - Rolling 7-day chart fixed and scaled properly
 - Total results counted / ignored duplicates restored
 - Button styling unified across the entire UI
@@ -121,7 +125,3 @@ PRs welcome! Especially interested in:
 ## License
 
 MIT
-
----
-
-**Made with ❤️ for NeoNova admins who hate guessing why the modem keeps dropping.**
