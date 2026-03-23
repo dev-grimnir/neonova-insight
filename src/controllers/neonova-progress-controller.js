@@ -51,8 +51,7 @@ class NeonovaProgressController {
                 metrics,
                 sanitizedEntries.length
             );
-
-            reportController.generateAndOpen();            
+           
             progressView.markComplete();
                
             } catch (err) {
