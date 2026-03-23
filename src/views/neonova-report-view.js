@@ -1,11 +1,11 @@
 class NeonovaReportView extends BaseNeonovaView {
     constructor(model) {
-        super(null);
+        super(model.controller || null);
         this.model = model;
-        this.username = this.model.getUsername;
-        this.friendlyName = this.model.getFriendlyName;
-        this.metrics = this.model.getMetrics;
-        this.longDisconnects = this.model.getLongDisconnects;
+        this.username       = this.model.username;
+        this.friendlyName   = this.model.friendlyName;
+        this.metrics        = this.model.metrics;
+        this.longDisconnects = this.model.longDisconnects;
 
         console.log("NeonovaReportView.constructor longDisconnects = " + this.longDisconnects);
 
