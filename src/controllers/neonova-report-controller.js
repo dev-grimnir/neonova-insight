@@ -10,6 +10,6 @@ class NeonovaReportController {
         );
 
         this.view = new NeonovaReportView(this.model);
-        
+        this.view.show();
     }
 }
