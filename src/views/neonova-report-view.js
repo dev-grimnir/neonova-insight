@@ -277,18 +277,18 @@ class NeonovaReportView extends NeonovaBaseModalView {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-700 text-sm">
-                                <tr><td class="p-6">Total Disconnects</td><td class="p-6 text-right font-mono">${this.metrics.disconnects || 0}</td></tr>
-                                <tr><td class="p-6">Average Session Duration</td><td class="p-6 text-right">${this.metrics.avgSessionMin ? formatDuration(this.metrics.avgSessionMin * 60) : 'N/A'}</td></tr>
-                                <tr><td class="p-6">Average Reconnect Time</td><td class="p-6 text-right">${this.metrics.avgReconnectMin ? formatDuration(this.metrics.avgReconnectMin * 60) : 'N/A'}</td></tr>
-                                <tr><td class="p-6">Percent Connected</td><td class="p-6 text-right">${Number(this.metrics.percentConnected || 0).toFixed(1)}%</td></tr>
-                                <tr><td class="p-6">Business Hours Disconnects</td><td class="p-6 text-right">${this.metrics.businessDisconnects || 0}</td></tr>
-                                <tr><td class="p-6">Off-Hours Disconnects</td><td class="p-6 text-right">${this.metrics.offHoursDisconnects || 0}</td></tr>
-                                <tr><td class="p-6">Time Since Last Disconnect</td><td class="p-6 text-right">${this.metrics.timeSinceLastStr || 'N/A'}</td></tr>
-                                <tr><td class="p-6">Peak Disconnect Hour</td><td class="p-6 text-right">${this.metrics.peakHourStr || 'None'}</td></tr>
-                                <tr><td class="p-6">Peak Disconnect Day</td><td class="p-6 text-right">${this.metrics.peakDayStr || 'None'}</td></tr>
-                                <tr><td class="p-6">Longest Session</td><td class="p-6 text-right">${this.metrics.longestSessionMin ? formatDuration(this.metrics.longestSessionMin * 60) : 'N/A'}</td></tr>
-                                <tr><td class="p-6">Shortest Session</td><td class="p-6 text-right">${this.metrics.shortestSessionMin ? formatDuration(this.metrics.shortestSessionMin * 60) : 'N/A'}</td></tr>
-                                <tr><td class="p-6">Median Reconnect Time</td><td class="p-6 text-right">${this.metrics.medianReconnectMin ? formatDuration(this.metrics.medianReconnectMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Total Disconnects</td><td class="p-6 text-right font-mono">${this.metrics.disconnects || 0}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Average Session Duration</td><td class="p-6 text-right">${this.metrics.avgSessionMin ? formatDuration(this.metrics.avgSessionMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Average Reconnect Time</td><td class="p-6 text-right">${this.metrics.avgReconnectMin ? formatDuration(this.metrics.avgReconnectMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Percent Connected</td><td class="p-6 text-right">${Number(this.metrics.percentConnected || 0).toFixed(1)}%</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Business Hours Disconnects</td><td class="p-6 text-right">${this.metrics.businessDisconnects || 0}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Off-Hours Disconnects</td><td class="p-6 text-right">${this.metrics.offHoursDisconnects || 0}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Time Since Last Disconnect</td><td class="p-6 text-right">${this.metrics.timeSinceLastStr || 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Peak Disconnect Hour</td><td class="p-6 text-right">${this.metrics.peakHourStr || 'None'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Peak Disconnect Day</td><td class="p-6 text-right">${this.metrics.peakDayStr || 'None'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Longest Session</td><td class="p-6 text-right">${this.metrics.longestSessionMin ? formatDuration(this.metrics.longestSessionMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Shortest Session</td><td class="p-6 text-right">${this.metrics.shortestSessionMin ? formatDuration(this.metrics.shortestSessionMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6 text-zinc-200">Median Reconnect Time</td><td class="p-6 text-right">${this.metrics.medianReconnectMin ? formatDuration(this.metrics.medianReconnectMin * 60) : 'N/A'}</td></tr>
                             </tbody>
                         </table>
                     </div>
