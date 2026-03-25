@@ -85,26 +85,41 @@ class NeonovaReportView extends NeonovaBaseModalView {
 
     initCharts() {
         const accentColor = this.accent === 'emerald' ? '#10b981' :
-        this.accent === 'blue' ? '#3b82f6' :
-        this.accent === 'violet' ? '#8b5cf6' : '#10b981';
+            this.accent === 'blue' ? '#3b82f6' :
+            this.accent === 'violet' ? '#8b5cf6' : '#10b981';
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { right: 20, left: 10 }   // prevents tooltip from pushing the chart
+            },
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    displayColors: false,
+                    backgroundColor: '#27272a',
+                    titleColor: '#e5e7eb',
+                    bodyColor: '#e5e7eb',
+                    borderColor: accentColor,
+                    borderWidth: 1
+                },
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        };
 
         // Hourly chart
         new Chart(document.getElementById('hourlyChart'), {
             type: 'bar',
             data: {
                 labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                datasets: [{
-                    label: 'Disconnects',
-                    data: this.metrics.hourlyDisconnects || Array(24).fill(0),
-                    backgroundColor: accentColor
-                }]
+                datasets: [{ label: 'Disconnects', data: this.metrics.hourlyDisconnects || Array(24).fill(0), backgroundColor: accentColor }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { display: false } }
-            }
+            options: { ...commonOptions }
         });
 
         // Daily chart
@@ -112,21 +127,12 @@ class NeonovaReportView extends NeonovaBaseModalView {
             type: 'bar',
             data: {
                 labels: this.metrics.dailyLabels || [],
-                datasets: [{
-                    label: 'Disconnects',
-                    data: this.metrics.dailyDisconnects || [],
-                    backgroundColor: accentColor
-                }]
+                datasets: [{ label: 'Disconnects', data: this.metrics.dailyDisconnects || [], backgroundColor: accentColor }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { display: false } }
-            }
+            options: { ...commonOptions }
         });
 
-        // Rolling 7-day chart
+        // Rolling 7-day chart (keeps legend)
         new Chart(document.getElementById('rollingChart'), {
             type: 'line',
             data: {
@@ -145,17 +151,19 @@ class NeonovaReportView extends NeonovaBaseModalView {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true },
-                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
-                },
+                ...commonOptions,
                 plugins: {
+                    ...commonOptions.plugins,
                     legend: {
                         display: true,
                         position: 'top',
-                        labels: { color: '#e5e7eb' }
+                        labels: { color: '#e5e7eb', boxWidth: 12 }
+                    }
+                },
+                scales: {
+                    ...commonOptions.scales,
+                    x: {
+                        ticks: { maxRotation: 45, minRotation: 45 }
                     }
                 }
             }
