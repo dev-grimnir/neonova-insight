@@ -281,12 +281,31 @@ class NeonovaReportView extends NeonovaBaseModalView {
                 <div class="grid grid-cols-2 gap-8 mb-16">
                     <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
                         <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}/100</div>
-                        <span class="tooltiptext text-left"> ... (your mean tooltip text) ... </span>
+                        <span class="tooltiptext text-left">
+                            <strong>How this score is calculated (using average session length):</strong><br><br>
+                            • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
+                            • Session quality bonus: ${Number(this.metrics.sessionBonusMean || 0).toFixed(1)}<br>
+                            • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
+                            • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
+                            • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
+                            Raw score: ${Number(this.metrics.rawMeanScore || 0).toFixed(1)}<br>
+                            Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}
+                        </span>
                         <p class="text-zinc-400 text-lg mt-4">Mean Stability Score</p>
                     </div>
+
                     <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
                         <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}/100</div>
-                        <span class="tooltiptext text-left"> ... (your median tooltip text) ... </span>
+                        <span class="tooltiptext text-left">
+                            <strong>How this score is calculated (using median session length):</strong><br><br>
+                            • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
+                            • Session quality bonus: ${Number(this.metrics.sessionBonusMedian || 0).toFixed(1)}<br>
+                            • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
+                            • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
+                            • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
+                            Raw score: ${Number(this.metrics.rawMedianScore || 0).toFixed(1)}<br>
+                            Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}
+                        </span>
                         <p class="text-zinc-400 text-lg mt-4">Median Stability Score</p>
                     </div>
                 </div>
@@ -354,7 +373,24 @@ class NeonovaReportView extends NeonovaBaseModalView {
                         transition: all 0.2s; font-size: 13px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
                     }
                     .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+                    /* Green scrollbar (matches the original report and app theme) */
+                    #report-content::-webkit-scrollbar {
+                        width: 10px;
+                    }
+                    #report-content::-webkit-scrollbar-track {
+                        background: #18181b;
+                    }
+                    #report-content::-webkit-scrollbar-thumb {
+                        background: #10b981; /* emerald-500 green */
+                        border-radius: 9999px;
+                        border: 2px solid #18181b;
+                    }
+                    #report-content::-webkit-scrollbar-thumb:hover {
+                        background: #34d399; /* slightly brighter on hover */
+                    }
                 </style>
+                
             </div>
         `;
     }
