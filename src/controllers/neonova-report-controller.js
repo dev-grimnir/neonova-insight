@@ -9,7 +9,7 @@ class NeonovaReportController {
             metrics.longDisconnects || []
         );
 
-        this.view = new NeonovaReportView(this.model);
+        this.view = new NeonovaReportView(this, this.model);
         this.view.show();
     }
 }
