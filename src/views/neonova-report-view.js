@@ -83,19 +83,6 @@ class NeonovaReportView extends NeonovaBaseModalView {
             </details>`;
     }
 
-    renderReport() {
-        if (!this.modal) return;
-        const content = this.modal.querySelector('#report-content');
-        if (!content) return;
-
-        content.innerHTML = this.generateReportHTML();
-
-        // Charts must be initialized AFTER they are in the real DOM
-        requestAnimationFrame(() => {
-            this.initCharts();        // your existing initCharts() method — just make sure the three canvas IDs exist in the fragment above
-        });
-    }
-
     initCharts() {
         const accentColor = this.accent === 'emerald' ? '#10b981' :
         this.accent === 'blue' ? '#3b82f6' :
@@ -242,6 +229,45 @@ class NeonovaReportView extends NeonovaBaseModalView {
         return csv;
     }
 
+    loadChartJS() {
+        return new Promise((resolve) => {
+            if (typeof window.Chart !== 'undefined') {
+                resolve(true);
+                return;
+            }
+
+            console.log('📈 Loading Chart.js for modal report...');
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+            script.async = true;
+            script.onload = () => {
+                console.log('✅ Chart.js loaded');
+                resolve(true);
+            };
+            script.onerror = () => {
+                console.error('❌ Failed to load Chart.js');
+                resolve(false);
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    async renderReport() {
+        if (!this.modal) return;
+        const content = this.modal.querySelector('#report-content');
+        if (!content) return;
+
+        content.innerHTML = this.generateReportHTML();
+
+        // Wait for Chart.js then initialize
+        await this.loadChartJS();
+
+        requestAnimationFrame(() => {
+            this.initCharts();
+        });
+    }
+    
     generateReportHTML() {
         const longDisconnSection = this.generateLongDisconnSection();
 
