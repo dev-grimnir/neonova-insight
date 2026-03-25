@@ -1,47 +1,42 @@
-class NeonovaReportView extends BaseNeonovaView {
-    constructor(model) {
-        super(model.controller || null);
+class NeonovaReportView extends NeonovaBaseModalView {   
+    constructor(controller, model) {                      
+        super(controller);
+        this.controller = controller;
         this.model = model;
         this.username       = this.model.username;
         this.friendlyName   = this.model.friendlyName;
         this.metrics        = this.model.metrics;
         this.longDisconnects = this.model.longDisconnects;
-
-        console.log("NeonovaReportView.constructor longDisconnects = " + this.longDisconnects);
-
-        const reportHTML = this.generateReportHTML('');
-        const newTab = window.open('', '_blank');
-        newTab.document.write(reportHTML);
-        newTab.document.close();
+        this.accent         = this.model.accent || 'emerald'; 
     }
 
-        generateLongDisconnectsHTML() {
-            if (this.longDisconnects.length === 0) return '';
-        
-            let html = `
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-zinc-800 border-b border-zinc-700">
-                            <th class="p-6 text-left text-zinc-400 font-medium">Disconnected At</th>
-                            <th class="p-6 text-left text-zinc-400 font-medium">Reconnected At</th>
-                            <th class="p-6 text-right text-zinc-400 font-medium">Duration</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-700">`;
-        
-            this.longDisconnects.forEach(ld => {
-                const durationStr = formatDuration(ld.durationSec);
-                html += `
-                    <tr class="hover:bg-zinc-800/70 transition-colors">
-                        <td class="p-6 text-zinc-200">${ld.stopDate.toLocaleString()}</td>
-                        <td class="p-6 text-zinc-200">${ld.startDate.toLocaleString()}</td>
-                        <td class="p-6 text-right font-semibold text-${this.accent}-400">${durationStr}</td>
-                    </tr>`;
-            });
-        
-            html += `</tbody></table>`;
-            return html;
-        }
+    generateLongDisconnectsHTML() {
+        if (this.longDisconnects.length === 0) return '';
+    
+        let html = `
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-zinc-800 border-b border-zinc-700">
+                        <th class="p-6 text-left text-zinc-400 font-medium">Disconnected At</th>
+                        <th class="p-6 text-left text-zinc-400 font-medium">Reconnected At</th>
+                        <th class="p-6 text-right text-zinc-400 font-medium">Duration</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-700">`;
+    
+        this.longDisconnects.forEach(ld => {
+            const durationStr = formatDuration(ld.durationSec);
+            html += `
+                <tr class="hover:bg-zinc-800/70 transition-colors">
+                    <td class="p-6 text-zinc-200">${ld.stopDate.toLocaleString()}</td>
+                    <td class="p-6 text-zinc-200">${ld.startDate.toLocaleString()}</td>
+                    <td class="p-6 text-right font-semibold text-${this.accent}-400">${durationStr}</td>
+                </tr>`;
+        });
+    
+        html += `</tbody></table>`;
+        return html;
+    }
 
     generateLongDisconnSection() {
         if (this.longDisconnects.length === 0) {
@@ -58,6 +53,30 @@ class NeonovaReportView extends BaseNeonovaView {
                     ${this.generateLongDisconnectsHTML()}
                 </div>
             </details>`;
+    }
+
+    renderReport() {
+        if (!this.modal) return;
+        const content = this.modal.querySelector('#report-content');
+        if (!content) return;
+
+        content.innerHTML = this.generateReportHTML();
+
+        // Charts must be initialized AFTER they are in the real DOM
+        requestAnimationFrame(() => {
+            this.initCharts();        // your existing initCharts() method — just make sure the three canvas IDs exist in the fragment above
+        });
+    }
+
+    attachReportListeners() {
+        const closeBtn = this.modal.querySelector('#close-report-btn');
+        const modalEl  = this.modal.querySelector('#report-modal');
+
+        closeBtn.addEventListener('click', () => this.hide());
+
+        modalEl.addEventListener('click', e => {
+            if (e.target === modalEl) this.hide();
+        });
     }
 
     generateCsvContent() {
@@ -81,123 +100,99 @@ class NeonovaReportView extends BaseNeonovaView {
     generateReportHTML() {
         const csvContent = this.generateCsvContent();
         const longDisconnSection = this.generateLongDisconnSection();
+
         return `
-            <!DOCTYPE html>
-            <html lang="en" class="dark">
-            <head>
-                <meta charset="UTF-8">
-                <title>RADIUS Connection Report for ${this.username}</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-                <style>
-                    .tooltip { position: relative; }
-                    .tooltip .tooltiptext {
-                        visibility: hidden; width: 420px; background: #27272a; color: #e5e5e5;
-                        text-align: left; border-radius: 12px; padding: 16px; position: absolute;
-                        z-index: 10; top: 100%; left: 50%; margin-left: -210px; opacity: 0;
-                        transition: all 0.2s; font-size: 13px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
-                    }
-                    .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-                </style>
-            </head>
-            <body class="bg-zinc-950 text-zinc-200">
-                <div class="max-w-6xl mx-auto px-8 py-12">
-                    <h1 class="text-5xl font-bold text-white text-center tracking-tight">RADIUS Connection Report</h1>
-                    <p class="text-${this.accent}-400 text-center text-2xl mt-2 mb-3">${this.friendlyName || this.username}</p>
-                    <p class="text-center text-zinc-400 mb-16">Monitoring period: ${this.metrics.monitoringPeriod || 'N/A'} (${Number(this.metrics.daysSpanned || 0).toFixed(1)} days, ${this.metrics.totalResultsCounted || 0} total results counted, ${this.metrics.ignoredAsDuplicates || 0} ignored as duplicates)</p>
-    
-                    <!-- Stability Scores -->
-                    <div class="grid grid-cols-2 gap-8 mb-16">
-                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
-                            <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}/100</div>
-                            <span class="tooltiptext text-left">
-                                <strong>How this score is calculated (using average session length):</strong><br><br>
-                                • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
-                                • Session quality bonus: ${Number(this.metrics.sessionBonusMean || 0).toFixed(1)}<br>
-                                • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
-                                • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
-                                • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
-                                Raw score: ${Number(this.metrics.rawMeanScore || 0).toFixed(1)}<br>
-                                Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}
-                            </span>
-                            <p class="text-zinc-400 text-lg mt-4">Mean Stability Score</p>
-                        </div>
-    
-                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
-                            <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}/100</div>
-                            <span class="tooltiptext text-left">
-                                <strong>How this score is calculated (using median session length):</strong><br><br>
-                                • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
-                                • Session quality bonus: ${Number(this.metrics.sessionBonusMedian || 0).toFixed(1)}<br>
-                                • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
-                                • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
-                                • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
-                                Raw score: ${Number(this.metrics.rawMedianScore || 0).toFixed(1)}<br>
-                                Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}
-                            </span>
-                            <p class="text-zinc-400 text-lg mt-4">Median Stability Score</p>
-                        </div>
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-5xl font-bold text-white text-center tracking-tight">RADIUS Connection Report</h1>
+                <p class="text-${this.accent}-400 text-center text-2xl mt-2 mb-3">${this.friendlyName || this.username}</p>
+                <p class="text-center text-zinc-400 mb-16">Monitoring period: ${this.metrics.monitoringPeriod || 'N/A'} (${Number(this.metrics.daysSpanned || 0).toFixed(1)} days, ${this.metrics.totalResultsCounted || 0} total results counted, ${this.metrics.ignoredAsDuplicates || 0} ignored as duplicates)</p>
+
+                <!-- Stability Scores -->
+                <div class="grid grid-cols-2 gap-8 mb-16">
+                    <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
+                        <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}/100</div>
+                        <span class="tooltiptext text-left">
+                            <strong>How this score is calculated (using average session length):</strong><br><br>
+                            • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
+                            • Session quality bonus: ${Number(this.metrics.sessionBonusMean || 0).toFixed(1)}<br>
+                            • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
+                            • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
+                            • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
+                            Raw score: ${Number(this.metrics.rawMeanScore || 0).toFixed(1)}<br>
+                            Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMeanScore || 0)))}
+                        </span>
+                        <p class="text-zinc-400 text-lg mt-4">Mean Stability Score</p>
                     </div>
-    
-                    <!-- Key Statistics -->
-                    <div class="mb-16">
-                        <h2 class="text-3xl font-semibold text-white mb-8">Key Statistics</h2>
-                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
-                            <table class="w-full">
-                                <thead>
-                                    <tr class="border-b border-zinc-700 bg-zinc-800">
-                                        <th class="p-6 text-left text-zinc-400 font-medium">Metric</th>
-                                        <th class="p-6 text-right text-zinc-400 font-medium">Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-zinc-700 text-sm">
-                                    <tr><td class="p-6">Total Disconnects</td><td class="p-6 text-right font-mono">${this.metrics.disconnects || 0}</td></tr>
-                                    <tr><td class="p-6">Average Session Duration</td><td class="p-6 text-right">${this.metrics.avgSessionMin ? formatDuration(this.metrics.avgSessionMin * 60) : 'N/A'}</td></tr>
-                                    <tr><td class="p-6">Average Reconnect Time</td><td class="p-6 text-right">${this.metrics.avgReconnectMin ? formatDuration(this.metrics.avgReconnectMin * 60) : 'N/A'}</td></tr>
-                                    <tr><td class="p-6">Percent Connected</td><td class="p-6 text-right">${Number(this.metrics.percentConnected || 0).toFixed(1)}%</td></tr>
-                                    <tr><td class="p-6">Business Hours Disconnects</td><td class="p-6 text-right">${this.metrics.businessDisconnects || 0}</td></tr>
-                                    <tr><td class="p-6">Off-Hours Disconnects</td><td class="p-6 text-right">${this.metrics.offHoursDisconnects || 0}</td></tr>
-                                    <tr><td class="p-6">Time Since Last Disconnect</td><td class="p-6 text-right">${this.metrics.timeSinceLastStr || 'N/A'}</td></tr>
-                                    <tr><td class="p-6">Peak Disconnect Hour</td><td class="p-6 text-right">${this.metrics.peakHourStr || 'None'}</td></tr>
-                                    <tr><td class="p-6">Peak Disconnect Day</td><td class="p-6 text-right">${this.metrics.peakDayStr || 'None'}</td></tr>
-                                    <tr><td class="p-6">Longest Session</td><td class="p-6 text-right">${this.metrics.longestSessionMin ? formatDuration(this.metrics.longestSessionMin * 60) : 'N/A'}</td></tr>
-                                    <tr><td class="p-6">Shortest Session</td><td class="p-6 text-right">${this.metrics.shortestSessionMin ? formatDuration(this.metrics.shortestSessionMin * 60) : 'N/A'}</td></tr>
-                                    <tr><td class="p-6">Median Reconnect Time</td><td class="p-6 text-right">${this.metrics.medianReconnectMin ? formatDuration(this.metrics.medianReconnectMin * 60) : 'N/A'}</td></tr>
-                                    <tr><td class="p-6">95th Percentile Reconnect Time</td><td class="p-6 text-right">${this.metrics.p95ReconnectMin ? formatDuration(this.metrics.p95ReconnectMin * 60) : 'N/A'}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-    
-                    <!-- Charts -->
-                    <div class="space-y-16">
-                        <div>
-                            <h2 class="text-3xl font-semibold text-white mb-6">Disconnects by Hour of Day</h2>
-                            <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="hourlyChart" class="w-full h-96"></canvas></div>
-                        </div>
-                        <div>
-                            <h2 class="text-3xl font-semibold text-white mb-6">Disconnects by Day</h2>
-                            <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="dailyChart" class="w-full h-96"></canvas></div>
-                        </div>
-                        <div>
-                            <h2 class="text-3xl font-semibold text-white mb-6">Rolling 7-Day Disconnects</h2>
-                            <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="rollingChart" class="w-full h-96"></canvas></div>
-                        </div>
-                    </div>
-    
-                    <!-- Long Disconnects -->
-                    ${longDisconnSection}
-    
-                    <!-- Export Buttons -->
-                    <div class="flex justify-center gap-4 mt-20">
-                        <button onclick="exportToHTML()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as HTML</button>
-                        <button onclick="exportToCSV()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as CSV</button>
-                        <button onclick="exportToPDF()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as PDF</button>
+
+                    <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-10 text-center tooltip">
+                        <div class="text-7xl font-bold text-${this.accent}-400">${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}/100</div>
+                        <span class="tooltiptext text-left">
+                            <strong>How this score is calculated (using median session length):</strong><br><br>
+                            • Uptime component: ${Number(this.metrics.percentConnected || 0).toFixed(1)}% × 0.9 = ${Number(this.metrics.uptimeComponent || (Number(this.metrics.percentConnected || 0) * 0.9)).toFixed(1)}<br>
+                            • Session quality bonus: ${Number(this.metrics.sessionBonusMedian || 0).toFixed(1)}<br>
+                            • Fast recovery bonus: ${Number(this.metrics.totalFastBonus || 0).toFixed(1)}<br>
+                            • Flapping penalty: -${Number(this.metrics.flappingPenalty || 0).toFixed(1)}<br>
+                            • Long outage penalty: -${Number(this.metrics.longOutagePenalty || 0).toFixed(1)}<br><br>
+                            Raw score: ${Number(this.metrics.rawMedianScore || 0).toFixed(1)}<br>
+                            Displayed score: ${Math.round(Math.max(0, Math.min(100, this.metrics.rawMedianScore || 0)))}
+                        </span>
+                        <p class="text-zinc-400 text-lg mt-4">Median Stability Score</p>
                     </div>
                 </div>
-    
+
+                <!-- Key Statistics -->
+                <div class="mb-16">
+                    <h2 class="text-3xl font-semibold text-white mb-8">Key Statistics</h2>
+                    <div class="bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-zinc-700 bg-zinc-800">
+                                    <th class="p-6 text-left text-zinc-400 font-medium">Metric</th>
+                                    <th class="p-6 text-right text-zinc-400 font-medium">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-700 text-sm">
+                                <tr><td class="p-6">Total Disconnects</td><td class="p-6 text-right font-mono">${this.metrics.disconnects || 0}</td></tr>
+                                <tr><td class="p-6">Average Session Duration</td><td class="p-6 text-right">${this.metrics.avgSessionMin ? formatDuration(this.metrics.avgSessionMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6">Average Reconnect Time</td><td class="p-6 text-right">${this.metrics.avgReconnectMin ? formatDuration(this.metrics.avgReconnectMin * 60) : 'N/A'}</td></tr>
+                                <tr><td class="p-6">Percent Connected</td><td class="p-6 text-right">${Number(this.metrics.percentConnected || 0).toFixed(1)}%</td></tr>
+                                <tr><td class="p-6">Business Hours Disconnects</td><td class="p-6 text-right">${this.metrics.businessDisconnects || 0}</td></tr>
+                                <tr><td class="p-6">Off-Hours Disconnects</td><td class="p-6 text-right">${this.metrics.offHoursDisconnects || 0}</td></tr>
+                                <tr><td class="p-6">Time Since Last Disconnect</td><td class="p-6 text-right">${this.metrics.timeSinceLastStr || 'N/A'}</td></tr>
+                                <tr><td class="p-6">Peak Disconnect Hour</td><td class="p-6 text-right">${this.metrics.peakHourStr || 'None'}</td></tr>
+                                <tr><td class="p-6">Peak Disconnect Day</td><td class="p-6 text-right">${this.metrics.peakDayStr || 'None'}</td></tr>
+                                <!-- The rest of your Key Statistics rows (Longest Session, etc.) go here exactly as they were in the original file -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="space-y-16">
+                    <div>
+                        <h2 class="text-3xl font-semibold text-white mb-6">Disconnects by Hour of Day</h2>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="hourlyChart" class="w-full h-96"></canvas></div>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-semibold text-white mb-6">Disconnects by Day</h2>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="dailyChart" class="w-full h-96"></canvas></div>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-semibold text-white mb-6">Rolling 7-Day Disconnects</h2>
+                        <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8"><canvas id="rollingChart" class="w-full h-96"></canvas></div>
+                    </div>
+                </div>
+                <!-- (this is where your <canvas id="hourlyChart">, <canvas id="dailyChart">, <canvas id="rollingChart"> and any surrounding divs live) -->
+
+                ${longDisconnSection}
+
+                <!-- Export Buttons -->
+                <div class="flex justify-center gap-4 mt-20">
+                    <button onclick="exportToHTML()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as HTML</button>
+                    <button onclick="exportToCSV()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as CSV</button>
+                    <button onclick="exportToPDF()" class="px-10 py-4 bg-${this.accent}-600 hover:bg-${this.accent}-500 text-black font-semibold rounded-2xl transition">Export as PDF</button>
+                </div>
+
                 <script>
                     const accentHex = '${this.theme.accentColor}';
 
@@ -294,9 +289,18 @@ class NeonovaReportView extends BaseNeonovaView {
                         pdf.save('radius_report.pdf');
                     }
                 </script>
-            </body>
-            </html>
+
+                <style>
+                    .tooltip { position: relative; }
+                    .tooltip .tooltiptext {
+                        visibility: hidden; width: 420px; background: #27272a; color: #e5e5e5;
+                        text-align: left; border-radius: 12px; padding: 16px; position: absolute;
+                        z-index: 10; top: 100%; left: 50%; margin-left: -210px; opacity: 0;
+                        transition: all 0.2s; font-size: 13px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+                    }
+                    .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+                </style>
+            </div>
         `;
     }
-
 }
