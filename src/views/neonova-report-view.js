@@ -122,8 +122,8 @@ class NeonovaReportView extends NeonovaBaseModalView {
             options: { ...commonOptions }
         });
 
-        // Daily chart (clickable) — this is the only one we need the instance for
-        const dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
+        // Daily chart (clickable drill-down)
+        new Chart(document.getElementById('dailyChart'), {
             type: 'bar',
             data: {
                 labels: this.metrics.dailyLabels || [],
@@ -133,7 +133,24 @@ class NeonovaReportView extends NeonovaBaseModalView {
                     backgroundColor: accentColor 
                 }]
             },
-            options: { ...commonOptions }
+            options: {
+                ...commonOptions,
+                // ← THIS IS THE FIX
+                onClick: (event, elements) => {
+                    console.log('Daily bar clicked!');   // ← debug line so you can see it fire
+
+                    if (elements.length === 0) return;
+
+                    const index = elements[0].index;
+                    const clickedDate = this.metrics.dailyDates?.[index];
+
+                    console.log('Clicked date index:', index, '→', clickedDate); // extra debug
+
+                    if (clickedDate) {
+                        this.controller.openDailyDisconnectDetail(clickedDate);
+                    }
+                }
+            }
         });
 
         // Rolling chart
@@ -164,18 +181,6 @@ class NeonovaReportView extends NeonovaBaseModalView {
                     ...commonOptions.scales,
                     x: { ticks: { maxRotation: 45, minRotation: 45 } }
                 }
-            }
-        });
-
-        dailyChartInstance.canvas.addEventListener('click', (e) => {
-            const points = dailyChartInstance.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
-            if (points.length === 0) return;
-
-            const index = points[0].index;
-            const clickedDate = this.metrics.dailyDates?.[index];
-
-            if (clickedDate) {
-                this.controller.openDailyDisconnectDetail(clickedDate);
             }
         });
     }
