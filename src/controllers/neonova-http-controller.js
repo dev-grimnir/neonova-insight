@@ -332,6 +332,7 @@ static async paginateReportLogs(username, startDate = null, endDate = null, onPr
 
         // Line 28: Construct full URL by appending params to baseSearchUrl.
         const url = this.#buildPageUrl(params);
+        console.log("NeonovaHTTPController.paginateReportLogs() -> search URL: " + url);
 
         // Line 30–37: Try to fetch the page HTML.
         // Uses private #fetchPageHtml (which does fetch with credentials/no-cache).
