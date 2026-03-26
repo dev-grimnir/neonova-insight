@@ -32,27 +32,27 @@ class NeonovaReportController {
                 eday:   endDate.getDate().toString().padStart(2, '0')
             };
 
-            console.log('📡 Calling paginateReportLogs with overrides:', overrides);
+            console.log('📡 Calling submitSearch with overrides:', overrides);
 
-            const searchDoc = await NeonovaHTTPController.paginateReportLogs(
+            // ← This is the exact call the main report already uses
+            const searchDoc = await NeonovaHTTPController.submitSearch(
                 this.model.username,
                 overrides
             );
 
-            console.log('📦 paginateReportLogs returned:', searchDoc ? 'document object' : 'null/undefined');
+            console.log('📦 submitSearch returned document');
 
+            // Run through collector (same as main report)
             const collector = new NeonovaCollector();
-            const processed = collector.process(searchDoc);   // ← change to collector.processDailyLogs if that's what the main report uses
+            const processed = collector.process(searchDoc);   // ← use whatever method your main report uses here
 
-            console.log('🔧 Collector processed result:', processed);
-            console.log('🔑 Has .events?', !!processed.events);
-            console.log('🔑 Events length:', processed.events ? processed.events.length : 'N/A');
+            console.log('🔧 Collector finished — events:', processed.events ? processed.events.length : 'N/A');
 
             const dailyModel = new NeonovaDailyDisconnectModel(
                 this.model.username,
                 this.model.friendlyName,
                 clickedDate,
-                processed.events || processed   // fallback in case collector returns array directly
+                processed.events || processed
             );
 
             console.log('✅ Daily model created with', dailyModel.events.length, 'events');
@@ -62,6 +62,7 @@ class NeonovaReportController {
 
         } catch (err) {
             console.error('❌ Daily detail failed:', err);
+            alert('Could not load daily details. Check console.');
         }
     }
     
