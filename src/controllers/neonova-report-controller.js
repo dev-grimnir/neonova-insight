@@ -53,8 +53,7 @@ class NeonovaReportController {
 
             console.log('🔄 Converted to array — length:', rawEntries.length);
 
-            const collector = new NeonovaCollector();
-            const processed = collector.cleanEntries(rawEntries);   // exactly what cleanEntries expects
+            const processed = NeonovaCollector.cleanEntries(rawEntries);   // exactly what cleanEntries expects
 
             console.log('🔧 cleanEntries finished — processed length:', processed.length);
 
