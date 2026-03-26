@@ -64,9 +64,6 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             console.warn('⚠️ No events in model — chart will be empty');
             // You can optionally show a message on the canvas here later
         }
-        
-        const ctx = document.getElementById('ekgChart');
-        if (!ctx) return;
 
         const labels = [];
         const dataPoints = [];
