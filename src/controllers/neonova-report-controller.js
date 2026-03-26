@@ -32,22 +32,25 @@ class NeonovaReportController {
                 eday: endDate.getDate().toString().padStart(2, '0')
             };
 
-            console.log('📡 overrides:', overrides);
+            console.log('📡 overrides sent:', overrides);
 
-            // Direct call — no extra logic that could retry
-            const searchDoc = await NeonovaHTTPController.paginateReportLogs(this.model.username, overrides);
+            // Use submitSearch directly (the method the main report relies on)
+            const searchDoc = await NeonovaHTTPController.submitSearch(this.model.username, overrides);
 
-            console.log('📦 paginateReportLogs returned:', typeof searchDoc, searchDoc ? 'non-null' : 'null');
+            console.log('📦 submitSearch returned type:', typeof searchDoc);
 
-            // Minimal processing
             let rawEntries = [];
-            if (searchDoc instanceof Map) rawEntries = Array.from(searchDoc.values());
-            else if (Array.isArray(searchDoc)) rawEntries = searchDoc;
-            else if (searchDoc && typeof searchDoc === 'object') rawEntries = Object.values(searchDoc);
+            if (searchDoc instanceof Map) {
+                rawEntries = Array.from(searchDoc.values());
+            } else if (Array.isArray(searchDoc)) {
+                rawEntries = searchDoc;
+            } else if (searchDoc && typeof searchDoc === 'object') {
+                rawEntries = Object.values(searchDoc);
+            }
 
             console.log('🔄 rawEntries length:', rawEntries.length);
 
-            const validEntries = rawEntries.filter(e => e && typeof e === 'object');
+            const validEntries = rawEntries.filter(entry => entry && typeof entry === 'object');
 
             const processed = NeonovaCollector.cleanEntries(validEntries);
             const events = Array.isArray(processed) ? processed : [];
@@ -61,13 +64,11 @@ class NeonovaReportController {
                 events
             );
 
-            console.log('✅ Model ready — launching view');
-
             const dailyView = new NeonovaDailyDisconnectView(this, dailyModel);
             dailyView.show();
 
         } catch (err) {
-            console.error('❌ openDailyDisconnectDetail failed:', err);
+            console.error('❌ Daily detail failed:', err);
         }
     }
     
