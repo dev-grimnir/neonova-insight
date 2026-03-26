@@ -34,24 +34,25 @@ class NeonovaReportController {
 
             console.log('📡 Calling submitSearch with overrides:', overrides);
 
-            // ← This is the exact call the main report already uses
             const searchDoc = await NeonovaHTTPController.submitSearch(
                 this.model.username,
                 overrides
             );
 
-            console.log('📦 submitSearch returned document');
+            console.log('📦 submitSearch returned document (Map)');
 
-            // Run through collector (same as main report)
-            const processed = NeonovaCollector.cleanEntries(searchDoc);
+            // ← THIS IS THE FIX: convert Map → array before cleanEntries
+            const rawEntries = Array.from(searchDoc.values());
 
-            console.log('🔧 Collector finished — events:', processed.events ? processed.events.length : 'N/A');
+            const processed = NeonovaCollector.cleanEntries(rawEntries);
+
+            console.log('🔧 cleanEntries finished — processed events:', processed.length);
 
             const dailyModel = new NeonovaDailyDisconnectModel(
                 this.model.username,
                 this.model.friendlyName,
                 clickedDate,
-                processed.events || processed
+                processed   // this is now the cleaned array
             );
 
             console.log('✅ Daily model created with', dailyModel.events.length, 'events');
