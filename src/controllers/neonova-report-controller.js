@@ -39,20 +39,30 @@ class NeonovaReportController {
                 overrides
             );
 
-            console.log('📦 submitSearch returned document (Map)');
+            console.log('📦 submitSearch returned document of type:', typeof searchDoc);
 
-            // ← THIS IS THE FIX: convert Map → array before cleanEntries
-            const rawEntries = Array.from(searchDoc.values());
+            // Robust conversion — works whether it's a Map, array, or plain object
+            let rawEntries = [];
+            if (searchDoc instanceof Map) {
+                rawEntries = Array.from(searchDoc.values());
+            } else if (Array.isArray(searchDoc)) {
+                rawEntries = searchDoc;
+            } else if (searchDoc && typeof searchDoc === 'object') {
+                rawEntries = Object.values(searchDoc);
+            }
 
-            const processed = NeonovaCollector.cleanEntries(rawEntries);
+            console.log('🔄 Converted to array — length:', rawEntries.length);
 
-            console.log('🔧 cleanEntries finished — processed events:', processed.length);
+            const collector = new NeonovaCollector();
+            const processed = collector.cleanEntries(rawEntries);   // exactly what cleanEntries expects
+
+            console.log('🔧 cleanEntries finished — processed length:', processed.length);
 
             const dailyModel = new NeonovaDailyDisconnectModel(
                 this.model.username,
                 this.model.friendlyName,
                 clickedDate,
-                processed   // this is now the cleaned array
+                processed
             );
 
             console.log('✅ Daily model created with', dailyModel.events.length, 'events');
