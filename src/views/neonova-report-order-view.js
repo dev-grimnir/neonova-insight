@@ -106,25 +106,31 @@ class NeonovaReportOrderView extends NeonovaBaseModalView {
         const currentMonth = today.getMonth() + 1;
         const currentDay = today.getDate();
 
+        // Start date = today minus 11 months (handles year rollover automatically)
+        const startDate = new Date(today);
+        startDate.setMonth(startDate.getMonth() - 11);
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+
         const populate = (selectId, values, defaultVal) => {
             const select = this.modal.querySelector(selectId);
             if (!select) return;
             select.innerHTML = values.map(v => `<option value="${v}" ${v === defaultVal ? 'selected' : ''}>${v}</option>`).join('');
         };
 
-        // Years
-        const years = Array.from({length: 5}, (_, i) => currentYear - i);
-        populate('#start-year', years, currentYear);
+        const years = Array.from({length: 2}, (_, i) => currentYear - i);
+        populate('#start-year', years, startYear);
         populate('#end-year', years, currentYear);
 
         // Months
         const months = Array.from({length: 12}, (_, i) => i + 1);
-        populate('#start-month', months, currentMonth);
+        populate('#start-month', months, startMonth);
         populate('#end-month', months, currentMonth);
 
         // Days
         const days = Array.from({length: 31}, (_, i) => i + 1);
-        populate('#start-day', days, currentDay);
+        populate('#start-day', days, startDay);
         populate('#end-day', days, currentDay);
     }
 
@@ -175,5 +181,4 @@ class NeonovaReportOrderView extends NeonovaBaseModalView {
         super.hide();
     }
 
-    // If your original had custom error or toast methods, keep them here unchanged
 }
