@@ -43,7 +43,7 @@ class NeonovaReportController {
             console.log('📦 submitSearch returned document');
 
             // Run through collector (same as main report)
-            const processed = NeonovaCollector.processEntries(searchDoc);
+            const processed = NeonovaCollector.cleanEntries(searchDoc);
 
             console.log('🔧 Collector finished — events:', processed.events ? processed.events.length : 'N/A');
 
