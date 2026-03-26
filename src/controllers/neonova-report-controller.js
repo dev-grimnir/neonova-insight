@@ -32,11 +32,17 @@ class NeonovaReportController {
                 eday:   endDate.getDate().toString().padStart(2, '0')
             };
 
-            const searchDoc = await NeonovaHTTPController.submitSearch(this.model.username, overrides);
+            console.log('📡 Calling paginateReportLogs with overrides:', overrides);
 
-            console.log('📦 submitSearch returned type:', typeof searchDoc, 'keys:', searchDoc ? Object.keys(searchDoc) : 'null');
+            // Use the method you told me to use
+            const searchDoc = await NeonovaHTTPController.paginateReportLogs(
+                this.model.username,
+                overrides
+            );
 
-            // More aggressive extraction
+            console.log('📦 paginateReportLogs returned type:', typeof searchDoc);
+
+            // Robust extraction (handles Map, array, or object)
             let rawEntries = [];
             if (searchDoc instanceof Map) {
                 rawEntries = Array.from(searchDoc.values());
@@ -48,7 +54,7 @@ class NeonovaReportController {
 
             console.log('🔄 Raw entries length:', rawEntries.length);
 
-            // Very lenient filter — keep anything that looks like an entry
+            // Lenient filter for cleanEntries
             const validEntries = rawEntries.filter(entry => 
                 entry && typeof entry === 'object' && 
                 (entry.dateObj || entry.timestamp || entry.stopTime || entry.startTime || entry.time)
@@ -56,10 +62,10 @@ class NeonovaReportController {
 
             console.log('✅ Valid entries after filter:', validEntries.length);
 
-            // Static collector
+            // Static collector call
             const processed = NeonovaCollector.cleanEntries(validEntries);
 
-            const events = Array.isArray(processed) ? processed : (processed ? [processed] : []);
+            const events = Array.isArray(processed) ? processed : [];
 
             console.log('🔧 cleanEntries returned length:', events.length);
 
@@ -77,6 +83,7 @@ class NeonovaReportController {
 
         } catch (err) {
             console.error('❌ Daily detail failed:', err);
+            alert('Could not load daily details. Check console.');
         }
     }
     
