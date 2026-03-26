@@ -14,6 +14,7 @@ class NeonovaReportController {
     }
 
     async openDailyDisconnectDetail(clickedDate) {
+        console.log("NeonovaReportController.openDailyDisconnectDetail() -> START");
         try {
             const startDate = new Date(clickedDate);
             startDate.setHours(0, 0, 0, 0);
