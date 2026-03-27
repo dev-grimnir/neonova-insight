@@ -112,37 +112,30 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 : '??:??';
             
             labels.push(timeStr);
-            dataPoints.push(event.status === 'connected' || event.status === 'Start' ? 1 : 0);
+            // +1 = connected (above center line), -1 = disconnected (below center line)
+            dataPoints.push(event.status === 'connected' || event.status === 'Start' ? 1 : -1);
         });
 
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [
-                    // 1. Thin colored line (border only)
-                    {
-                        label: 'Status Line',
-                        data: dataPoints,
-                        borderWidth: 3,
-                        stepped: 'after',
-                        tension: 0,
-                        fill: false,
-                        borderColor: '#10b981',
-                        pointRadius: 0
+                datasets: [{
+                    label: 'Modem Status',
+                    data: dataPoints,
+                    borderWidth: 3,
+                    stepped: 'after',
+                    tension: 0,
+                    fill: 'origin',                    // ← fills to the center line
+                    backgroundColor: (context) => {
+                        return context.raw > 0 ? '#10b98144' : '#ef444444';
                     },
-                    // 2. Solid fill dataset (this is what creates the colored blocks)
-                    {
-                        label: 'Duration Fill',
-                        data: dataPoints,
-                        borderWidth: 0,
-                        stepped: 'after',
-                        tension: 0,
-                        fill: true,
-                        backgroundColor: '#10b98144',   // green = connected
-                        pointRadius: 0
+                    borderColor: '#10b981',
+                    pointRadius: 0,
+                    segment: {
+                        borderColor: (ctx) => (ctx.p0.parsed.y < 0 ? '#ef4444' : '#10b981')
                     }
-                ]
+                }]
             },
             options: {
                 responsive: true,
@@ -152,9 +145,11 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 },
                 scales: {
                     y: { 
-                        display: false, 
-                        min: -0.1, 
-                        max: 1.1 
+                        display: true,
+                        min: -1.2,
+                        max: 1.2,
+                        ticks: { display: false },
+                        grid: { color: '#27272a' }
                     },
                     x: { 
                         grid: { color: '#27272a', lineWidth: 1 },
@@ -168,7 +163,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     }
                 },
                 layout: { 
-                    padding: { right: 40, left: 20 } 
+                    padding: { right: 40, left: 20, top: 20 } 
                 }
             }
         });
