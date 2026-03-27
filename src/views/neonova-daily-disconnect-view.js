@@ -127,7 +127,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     stepped: 'after',
                     tension: 0,
                     fill: 'origin',                    // fills to the center line
-                    backgroundColor: (context) => context.raw > 0 ? '#10b98188' : '#ef444488',
+                    backgroundColor: (context) => (context.raw > 0 ? '#10b98188' : '#ef444488'),
                     borderColor: '#10b981',
                     pointRadius: 0,
                     segment: {
