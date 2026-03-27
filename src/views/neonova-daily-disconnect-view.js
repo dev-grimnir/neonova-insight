@@ -72,30 +72,20 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             return;
         }
     
-        if (!this.model.events || this.model.events.length < 2) {
-            // Optional: you could draw a static "no data" message on the canvas if you want
-            return;
-        }
+        if (!this.model.events || this.model.events.length < 2) return;
     
-        const labels = [];
-        const dataPoints = [];
-    
-        // Ensure events are sorted by time (just in case the model doesn't guarantee it)
+        // Sort events chronologically (defensive)
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
         );
     
-        sortedEvents.forEach(event => {
-            const timeStr = event.dateObj 
-                ? event.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '??:??';
+        // Build data points with real Date objects for time scaling
+        const chartData = sortedEvents.map(event => ({
+            x: event.dateObj || new Date(),  // must be a real Date
+            y: (event.status === 'connected' || event.status === 'Start') ? 1 : -1
+        }));
     
-            labels.push(timeStr);
-            // +1 = connected (green bar above center), -1 = disconnected (red bar below center)
-            dataPoints.push(event.status === 'connected' || event.status === 'Start' ? 1 : -1);
-        });
-    
-        // Destroy any previous chart instance on this canvas (prevents duplicate charts if show() is called again)
+        // Destroy previous instance if modal is reopened
         if (this._ekgChartInstance) {
             this._ekgChartInstance.destroy();
         }
@@ -103,14 +93,13 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         this._ekgChartInstance = new Chart(canvas, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [{
                     label: 'Modem Status',
-                    data: dataPoints,
-                    borderWidth: 4,                    // thicker "top" of the bar
-                    stepped: 'after',                  // holds value until next change → rectangular blocks
-                    tension: 0,                        // sharp corners
-                    fill: 'origin',                    // fills from the line down/up to the horizontal center line (y=0)
+                    data: chartData,
+                    borderWidth: 4,
+                    stepped: 'after',          // creates the rectangular "bar" blocks
+                    tension: 0,
+                    fill: 'origin',            // fills from the line to the center line (y=0)
                     pointRadius: 0,
                     segment: {
                         borderColor: (ctx) => (ctx.p0.parsed.y < 0 ? '#ef4444' : '#10b981'),
@@ -121,40 +110,47 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { 
+                plugins: {
                     legend: { display: false },
-                    // Optional tooltip that shows exact time + status
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => ctx.parsed.y > 0 ? 'Connected' : 'Disconnected'
+                            title: (ctx) => ctx[0].label,   // shows full time
+                            label: (ctx) => ctx.parsed.y > 0 ? '✅ Connected' : '❌ Disconnected'
                         }
                     }
                 },
                 scales: {
-                    y: { 
-                        display: true,
+                    x: {
+                        type: 'time',                   // ← THIS IS THE KEY FIX
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'h a'             // 12 AM, 1 AM, etc. (clean)
+                            }
+                        },
+                        grid: {
+                            color: '#27272a',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            maxTicksLimit: 24,
+                            maxRotation: 0,
+                            autoSkip: true
+                        }
+                    },
+                    y: {
                         min: -1.2,
                         max: 1.2,
                         ticks: { display: false },
                         grid: {
                             color: (context) => context.tick.value === 0 ? '#a3a3a3' : '#27272a',
-                            lineWidth: (context) => context.tick.value === 0 ? 4 : 1.5,
-                            drawOnChartArea: true
-                        }
-                    },
-                    x: { 
-                        grid: { color: '#27272a', lineWidth: 1 },
-                        ticks: { 
-                            color: '#64748b', 
-                            maxRotation: 45,
-                            minRotation: 45,
-                            autoSkip: true,
-                            maxTicksLimit: 18
+                            lineWidth: (context) => context.tick.value === 0 ? 4 : 1.5   // thick EKG centerline
                         }
                     }
                 },
-                layout: { 
-                    padding: { right: 40, left: 20, top: 30, bottom: 10 } 
+                layout: {
+                    padding: { right: 40, left: 20, top: 30, bottom: 20 }
                 }
             }
         });
