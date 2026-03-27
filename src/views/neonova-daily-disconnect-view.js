@@ -74,55 +74,72 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     
         if (!this.model.events || this.model.events.length < 2) return;
     
-        // Sort events chronologically
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
         );
     
         if (!sortedEvents[0]?.dateObj) return;
     
-        // Full day range (00:00 → 24:00)
         const firstDate = sortedEvents[0].dateObj;
         const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
         const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     
-        // === EXPLICIT PERIOD COLLAPSE (more robust than before) ===
-        // Only one data point per stable connected/disconnected block.
-        // Long stable period → one single wide bar (exactly what you asked for).
-        const chartData = [];
+        // Step 1: Collapse to real status-change periods only
+        const rawPeriods = [];
         let i = 0;
         while (i < sortedEvents.length) {
             const startTime = sortedEvents[i].dateObj.getTime();
             const isConnected = (sortedEvents[i].status === 'connected' || sortedEvents[i].status === 'Start');
     
-            // Skip all following events that have the SAME status
             let j = i + 1;
             while (j < sortedEvents.length && 
                    (sortedEvents[j].status === 'connected' || sortedEvents[j].status === 'Start') === isConnected) {
                 j++;
             }
     
-            // Add the start of this period
-            chartData.push({
+            rawPeriods.push({
                 x: startTime,
                 y: isConnected ? 1 : -1
             });
     
-            i = j; // jump to the next status change
+            i = j;
         }
     
-        // Extend the final bar all the way to midnight
-        if (chartData.length > 0) {
-            const lastY = chartData[chartData.length - 1].y;
-            chartData.push({ x: dayEnd.getTime(), y: lastY });
+        // Extend final bar to midnight
+        if (rawPeriods.length > 0) {
+            const lastY = rawPeriods[rawPeriods.length - 1].y;
+            rawPeriods.push({ x: dayEnd.getTime(), y: lastY });
         }
     
-        console.log(`✅ Collapsed ${this.model.events.length} raw events → ${chartData.length} status periods`);
+        // Step 2: MERGE SHORT GLITCHES (this is what finally makes it useful)
+        // Any flip shorter than 2 minutes is ignored — the previous status continues.
+        // This turns rapid on/off noise into long, clean green/red bars exactly as you described.
+        const MIN_DURATION_MS = 2 * 60 * 1000;   // ← change to 5*60*1000 if you want stricter filtering
+        const chartData = [];
+        let k = 0;
+        while (k < rawPeriods.length - 1) {      // last point is the dayEnd extension
+            const current = rawPeriods[k];
+            const next    = rawPeriods[k + 1];
+            const duration = next.x - current.x;
     
-        // Destroy previous chart if modal reopened
-        if (this._ekgChartInstance) {
-            this._ekgChartInstance.destroy();
+            if (duration < MIN_DURATION_MS && chartData.length > 0) {
+                // short glitch → skip it, previous bar continues
+                k++;
+                continue;
+            }
+    
+            chartData.push(current);
+            k++;
         }
+        // Add the final midnight point
+        if (rawPeriods.length > 0) {
+            chartData.push(rawPeriods[rawPeriods.length - 1]);
+        }
+    
+        console.log(`✅ Collapsed ${this.model.events.length} raw events → ${rawPeriods.length} periods → ${chartData.length} final bars (short glitches < 2 min ignored)`);
+    
+        // Destroy old chart
+        if (this._ekgChartInstance) this._ekgChartInstance.destroy();
     
         this._ekgChartInstance = new Chart(canvas, {
             type: 'line',
@@ -130,7 +147,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 datasets: [{
                     label: 'Modem Status',
                     data: chartData,
-                    borderWidth: 4,
+                    borderWidth: 5,
                     stepped: 'after',
                     tension: 0,
                     fill: 'origin',
@@ -148,10 +165,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            title: (tooltipItems) => {
-                                const date = new Date(tooltipItems[0].parsed.x);
-                                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                            },
+                            title: (items) => new Date(items[0].parsed.x).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
                             label: (ctx) => ctx.parsed.y > 0 ? '✅ Connected' : '❌ Disconnected'
                         }
                     }
@@ -165,9 +179,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                         ticks: {
                             color: '#64748b',
                             maxTicksLimit: 24,
-                            maxRotation: 0,
-                            autoSkip: true,
-                            callback: (value) => new Date(value).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                            callback: (v) => new Date(v).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
                         }
                     },
                     y: {
@@ -175,8 +187,8 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                         max: 1.2,
                         ticks: { display: false },
                         grid: {
-                            color: (context) => context.tick.value === 0 ? '#a3a3a3' : '#27272a',
-                            lineWidth: (context) => context.tick.value === 0 ? 4 : 1.5
+                            color: (ctx) => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
+                            lineWidth: (ctx) => ctx.tick.value === 0 ? 4 : 1.5
                         }
                     }
                 },
