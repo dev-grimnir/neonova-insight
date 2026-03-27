@@ -108,8 +108,13 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         const accent = '#10b981';
 
         this.model.events.forEach(event => {
-            labels.push(event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            dataPoints.push(event.status === 'connected' ? 1 : 0);
+            // FIXED: use dateObj instead of timestamp
+            const timeStr = event.dateObj 
+                ? event.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '??:??';
+
+            labels.push(timeStr);
+            dataPoints.push(event.status === 'connected' || event.status === 'Start' ? 1 : 0);
         });
 
         new Chart(ctx, {
