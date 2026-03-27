@@ -105,14 +105,12 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
 
         const labels = [];
         const dataPoints = [];
-        const accent = '#10b981';
 
         this.model.events.forEach(event => {
-            // FIXED: use dateObj instead of timestamp
             const timeStr = event.dateObj 
                 ? event.dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 : '??:??';
-
+            
             labels.push(timeStr);
             dataPoints.push(event.status === 'connected' || event.status === 'Start' ? 1 : 0);
         });
@@ -124,29 +122,51 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 datasets: [{
                     label: 'Connection Status',
                     data: dataPoints,
-                    borderColor: accent,
                     borderWidth: 3,
-                    stepped: 'after',
+                    stepped: 'after',           // important: hold value until next change
                     tension: 0,
-                    fill: false,
-                    pointRadius: 0,
+                    fill: true,                 // ← this makes it show duration
+                    backgroundColor: (ctx) => {
+                        return ctx.parsed.y === 1 
+                            ? '#10b98133'   // semi-transparent green = connected
+                            : '#ef444433';  // semi-transparent red   = disconnected
+                    },
+                    borderColor: (ctx) => {
+                        return ctx.parsed.y === 1 
+                            ? '#10b981' 
+                            : '#ef4444';
+                    },
                     segment: {
-                        borderColor: ctx => (ctx.p0.parsed.y === 0 ? '#ef4444' : accent)
+                        borderColor: (ctx) => (ctx.p0.parsed.y === 0 ? '#ef4444' : '#10b981')
                     }
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { 
+                    legend: { display: false } 
+                },
                 scales: {
-                    y: { display: false, min: -0.1, max: 1.1 },
+                    y: { 
+                        display: false, 
+                        min: -0.1, 
+                        max: 1.1 
+                    },
                     x: { 
                         grid: { color: '#27272a', lineWidth: 1 },
-                        ticks: { color: '#64748b', maxRotation: 45 }
+                        ticks: { 
+                            color: '#64748b', 
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 24   // limit to roughly hourly labels so it's readable
+                        }
                     }
                 },
-                layout: { padding: { right: 30 } }
+                layout: { 
+                    padding: { right: 30, left: 10 } 
+                }
             }
         });
     }
