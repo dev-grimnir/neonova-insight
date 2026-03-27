@@ -150,7 +150,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                         data: chartData.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
                         borderColor: '#10b981',
                         backgroundColor: '#10b98188',
-                        borderWidth: 1,           // ← THIN AS POSSIBLE (this was the confusing thick line)
+                        borderWidth: 1,
                         stepped: 'after',
                         tension: 0,
                         fill: 'origin',
@@ -162,7 +162,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                         data: chartData.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
                         borderColor: '#ef4444',
                         backgroundColor: '#ef444488',
-                        borderWidth: 1,           // ← THIN AS POSSIBLE
+                        borderWidth: 1,
                         stepped: 'after',
                         tension: 0,
                         fill: 'origin',
@@ -176,9 +176,37 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        intersect: true,
+                        mode: 'nearest',
                         callbacks: {
-                            title: (items) => new Date(items[0].parsed.x).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-                            label: (ctx) => ctx.parsed.y !== 0 ? (ctx.parsed.y > 0 ? '✅ Connected' : '❌ Disconnected') : ''
+                            label: (context) => {
+                                if (context.parsed.y === 0) return '';
+    
+                                const isConnected = context.parsed.y > 0;
+                                const currentX = context.parsed.x;
+                                const datasetData = context.dataset.data;
+    
+                                // Find start of this bar
+                                let startX = dayStart.getTime();
+                                for (let idx = 0; idx < datasetData.length; idx++) {
+                                    if (datasetData[idx].x >= currentX) {
+                                        if (idx > 0) startX = datasetData[idx - 1].x;
+                                        break;
+                                    }
+                                }
+    
+                                const startStr = new Date(startX).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                                const endStr   = new Date(currentX).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    
+                                const durMs = currentX - startX;
+                                const hours = Math.floor(durMs / 3600000);
+                                const mins  = Math.floor((durMs % 3600000) / 60000);
+                                const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    
+                                const status = isConnected ? 'Connected' : 'Disconnected';
+    
+                                return `${status} - ${startStr} - ${endStr} = Duration: ${durationStr}`;
+                            }
                         }
                     }
                 },
