@@ -74,29 +74,45 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     
         if (!this.model.events || this.model.events.length < 2) return;
     
-        // Sort events by time
+        // Sort events chronologically
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
         );
     
-        if (!sortedEvents[0].dateObj) return;
+        if (!sortedEvents[0]?.dateObj) return;
     
-        // Calculate full day range (00:00 → 24:00)
+        // Full day range (00:00 → 24:00)
         const firstDate = sortedEvents[0].dateObj;
         const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
         const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     
-        // Build data with real timestamps (x = milliseconds)
-        let chartData = sortedEvents.map(event => ({
-            x: event.dateObj.getTime(),
-            y: (event.status === 'connected' || event.status === 'Start') ? 1 : -1
-        }));
+        // === COLLAPSE TO STATUS CHANGES ONLY ===
+        // This is the key fix: we only create a data point when the status actually flips.
+        // Long connected periods → one single wide green bar.
+        // Long offline periods → one single wide red bar.
+        // No more 60 tiny overlapping segments making it look like a barcode.
+        const chartData = [];
+        let prevConnected = null;
     
-        // Extend the LAST bar all the way to midnight
-        const lastY = chartData[chartData.length - 1].y;
-        chartData.push({ x: dayEnd.getTime(), y: lastY });
+        sortedEvents.forEach((event, i) => {
+            const isConnected = (event.status === 'connected' || event.status === 'Start');
+            
+            if (i === 0 || isConnected !== prevConnected) {
+                chartData.push({
+                    x: event.dateObj.getTime(),
+                    y: isConnected ? 1 : -1
+                });
+                prevConnected = isConnected;
+            }
+        });
     
-        // Destroy any old chart instance
+        // Extend the LAST bar all the way to midnight (so the final period doesn't stop short)
+        if (chartData.length > 0) {
+            const lastY = chartData[chartData.length - 1].y;
+            chartData.push({ x: dayEnd.getTime(), y: lastY });
+        }
+    
+        // Destroy previous chart if modal reopened
         if (this._ekgChartInstance) {
             this._ekgChartInstance.destroy();
         }
@@ -108,9 +124,9 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     label: 'Modem Status',
                     data: chartData,
                     borderWidth: 4,
-                    stepped: 'after',          // rectangular EKG blocks
+                    stepped: 'after',          // true rectangular EKG blocks
                     tension: 0,
-                    fill: 'origin',            // fill to center line
+                    fill: 'origin',            // fills solidly to the center line
                     pointRadius: 0,
                     segment: {
                         borderColor: (ctx) => (ctx.p0.parsed.y < 0 ? '#ef4444' : '#10b981'),
@@ -135,7 +151,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 },
                 scales: {
                     x: {
-                        type: 'linear',           // ← no date adapter required
+                        type: 'linear',
                         min: dayStart.getTime(),
                         max: dayEnd.getTime(),
                         grid: {
