@@ -75,23 +75,6 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         requestAnimationFrame(() => this.initEKGChart());
     }
 
-    generateEKGHTML() {
-        return `
-            <div class="max-w-6xl mx-auto">
-                <h1 class="text-5xl font-bold text-white text-center tracking-tight mb-10">Connection Status – ${this.model.getDateString ? this.model.getDateString() : ''}</h1>
-                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8">
-                    <canvas id="ekgChart" class="w-full h-[520px]"></canvas>
-                </div>
-            </div>
-
-            <style>
-                #daily-content::-webkit-scrollbar { width: 10px; }
-                #daily-content::-webkit-scrollbar-track { background: #18181b; }
-                #daily-content::-webkit-scrollbar-thumb { background: #10b981; border-radius: 9999px; border: 2px solid #18181b; }
-            </style>
-        `;
-    }
-
     initEKGChart() {
         console.log('initEKGChart called — events count:', this.model.events ? this.model.events.length : 0);
 
@@ -107,11 +90,11 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         const durations = [];
         const colors = [];
 
-        // Calculate real duration between consecutive events
+        // Build real duration between consecutive status changes
         for (let i = 0; i < this.model.events.length - 1; i++) {
             const start = this.model.events[i].dateObj.getTime();
             const end   = this.model.events[i + 1].dateObj.getTime();
-            const minutes = Math.max(1, Math.round((end - start) / 60000));   // at least 1 minute
+            const minutes = Math.max(1, Math.round((end - start) / 60000));
 
             const isConnected = this.model.events[i].status === 'connected' || 
                                 this.model.events[i].status === 'Start';
@@ -131,11 +114,11 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     backgroundColor: colors,
                     borderColor: '#ffffff22',
                     borderWidth: 1,
-                    barThickness: 30
+                    barThickness: 28
                 }]
             },
             options: {
-                indexAxis: 'y',                    // ← horizontal bars
+                indexAxis: 'y',                    // ← makes the chart horizontal
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { 
@@ -144,8 +127,8 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 scales: {
                     x: {
                         position: 'center',
-                        min: -120,
-                        max: 120,
+                        min: -180,
+                        max: 180,
                         grid: { color: '#27272a' },
                         ticks: { 
                             color: '#64748b',
