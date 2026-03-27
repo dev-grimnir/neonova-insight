@@ -39,7 +39,8 @@ class NeonovaReportController {
 
             // Existing processing (unchanged)
             const processed = NeonovaCollector.cleanEntries(entries || []);
-            const events = Array.isArray(processed) ? processed : [];
+            const events = result.cleanedEntries || [];
+            console.log(`cleanEntries returned ${events.length} cleaned events (ignored ${result.ignored || 0})`);
 
             const dailyModel = new NeonovaDailyDisconnectModel(
                 this.model.username,
