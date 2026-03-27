@@ -32,17 +32,13 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             </div>
         `;
 
-        console.log('DailyDisconnectView: calling super.createModal...');
-
-        super.createModal(modalHTML)
-            .then(() => {
-                console.log('DailyDisconnectView: createModal Promise RESOLVED → calling render()');
-                this.render();
-                this.attachListeners();
-            })
-            .catch(err => {
-                console.error('DailyDisconnectView: createModal Promise REJECTED:', err);
-            });
+        super.createModal(modalHTML).then(() => {
+            console.log('DailyDisconnectView: createModal Promise RESOLVED → calling render()');
+            this.render();
+            this.attachListeners();
+        }).catch(err => {
+            console.error('DailyDisconnectView: createModal Promise REJECTED:', err);
+        });
     }
 
     render() {
@@ -63,7 +59,6 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         content.innerHTML = this.generateEKGHTML();
 
         if (!this.model.events || this.model.events.length === 0) {
-            console.log('No events → showing empty message');
             content.innerHTML += `
                 <div class="text-center text-zinc-400 py-20 text-lg">
                     No connection events found for this day.
@@ -101,17 +96,15 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         const durations = [];
         const colors = [];
 
-        // Build real duration between consecutive status changes
         for (let i = 0; i < this.model.events.length - 1; i++) {
             const start = this.model.events[i].dateObj.getTime();
             const end   = this.model.events[i + 1].dateObj.getTime();
             const minutes = Math.max(1, Math.round((end - start) / 60000));
 
-            const isConnected = this.model.events[i].status === 'connected' || 
-                                this.model.events[i].status === 'Start';
+            const isConnected = this.model.events[i].status === 'connected' || this.model.events[i].status === 'Start';
 
             labels.push(this.model.events[i].dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            durations.push(isConnected ? minutes : -minutes);   // positive = above line, negative = below line
+            durations.push(isConnected ? minutes : -minutes);
             colors.push(isConnected ? '#10b98188' : '#ef444488');
         }
 
@@ -129,12 +122,10 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 }]
             },
             options: {
-                indexAxis: 'y',                    // ← makes the chart horizontal
+                indexAxis: 'y',                    // horizontal bars
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false } 
-                },
+                plugins: { legend: { display: false } },
                 scales: {
                     x: {
                         position: 'center',
@@ -157,7 +148,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             }
         });
     }
-    
+
     attachListeners() {
         console.log('DailyDisconnectView: attaching listeners');
         if (!this.modal) return;
