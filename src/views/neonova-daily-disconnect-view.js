@@ -25,6 +25,10 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         `;
 
         super.createModal(modalHTML);
+        this.onModalReady();
+    }
+
+    onModalReady() {
         this.render();
         this.attachListeners();
     }
