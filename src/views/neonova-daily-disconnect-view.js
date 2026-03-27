@@ -74,7 +74,6 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     
         if (!this.model.events || this.model.events.length < 2) return;
     
-        // Sort events
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
         );
@@ -85,7 +84,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
         const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     
-        // Build clean status periods
+        // Build periods
         const periods = [];
         let i = 0;
         while (i < sortedEvents.length) {
@@ -98,19 +97,16 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                 j++;
             }
     
-            periods.push({ x: start, isConnected: isConnected });
+            periods.push({ x: start, isConnected });
             i = j;
         }
     
-        // Extend last period to midnight
+        // Extend last bar to midnight
         if (periods.length > 0) {
-            periods.push({ 
-                x: dayEnd.getTime(), 
-                isConnected: periods[periods.length - 1].isConnected 
-            });
+            periods.push({ x: dayEnd.getTime(), isConnected: periods[periods.length - 1].isConnected });
         }
     
-        // Remove short glitches (< 2 minutes)
+        // Merge short glitches (< 2 min)
         const MIN_DURATION = 2 * 60 * 1000;
         const chartData = [];
         let k = 0;
@@ -126,12 +122,9 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         }
         if (periods.length > 0) chartData.push(periods[periods.length - 1]);
     
-        // Force full day coverage (no dead space)
+        // Force full coverage from midnight
         if (chartData.length > 0) {
-            chartData.unshift({ 
-                x: dayStart.getTime(), 
-                isConnected: chartData[0].isConnected 
-            });
+            chartData.unshift({ x: dayStart.getTime(), isConnected: chartData[0].isConnected });
         }
     
         console.log(`✅ Collapsed ${this.model.events.length} raw events → ${chartData.length} final bars`);
@@ -143,14 +136,17 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             data: {
                 datasets: [{
                     label: 'Modem Status',
-                    data: chartData.map(p => ({ x: p.x, y: p.isConnected ? 1 : -1 })),
+                    data: chartData.map(p => ({ 
+                        x: p.x, 
+                        y: p.isConnected ? 1 : -1 
+                    })),
                     borderWidth: 1,
                     stepped: 'after',
                     tension: 0,
                     fill: 'origin',
                     pointRadius: 0,
-                    borderColor: (ctx) => ctx.raw && ctx.raw.isConnected ? '#10b981' : '#ef4444',
-                    backgroundColor: (ctx) => ctx.raw && ctx.raw.isConnected ? '#10b98188' : '#ef444488'
+                    borderColor: (ctx) => (ctx.raw && ctx.raw.isConnected) ? '#10b981' : '#ef4444',
+                    backgroundColor: (ctx) => (ctx.raw && ctx.raw.isConnected) ? '#10b98188' : '#ef444488'
                 }]
             },
             options: {
@@ -169,7 +165,6 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                                 const isConnected = raw.isConnected !== undefined ? raw.isConnected : (context.parsed.y > 0);
                                 const currentX = context.parsed.x;
     
-                                // Find start of this segment
                                 let startX = dayStart.getTime();
                                 const data = context.dataset.data;
                                 for (let idx = 0; idx < data.length; idx++) {
