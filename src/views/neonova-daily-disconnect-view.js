@@ -4,15 +4,28 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         this.model = model;
     }
 
-        show() {
+    show() {
         console.log('DailyDisconnectView.show() called');
 
-        const modalHTML = `... your existing modalHTML here (same as before) ...`;
+        const modalHTML = `
+            <div id="daily-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[10001] opacity-0 transition-opacity duration-400">
+                <div class="bg-[#18181b] border border-[#27272a] rounded-3xl w-[1280px] max-w-[96vw] max-h-[96vh] overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-all duration-500">
+                    <div class="px-8 py-6 border-b border-[#27272a] bg-[#09090b] flex-shrink-0 flex items-center justify-between">
+                        <div>
+                            <div class="text-emerald-400 text-xs font-mono tracking-widest">${this.model.friendlyName}</div>
+                            <div class="text-3xl font-semibold text-white mt-1">${this.model.getDateString()}</div>
+                        </div>
+                        <button id="close-daily-btn" class="px-6 py-2.5 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                    <div id="daily-content" class="flex-1 overflow-y-auto p-8 bg-[#18181b]">
+                    </div>
+                </div>
+            </div>
+        `;
 
-        super.createModal(modalHTML);
-
-        // Wait until the modal is truly ready
-        this.waitForModalReady(() => {
+        super.createModal(modalHTML).then(() => {
             this.render();
             this.attachListeners();
         });
@@ -33,25 +46,21 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     }
 
     render() {
-        if (!this.modal || !this.modalReady) {
-            console.error('NeonovaDailyDisconnectView.render(): modal not ready yet');
+        if (!this.modal) {
+            console.error('Daily view: this.modal is null');
             return;
         }
 
         const content = this.modal.querySelector('#daily-content');
         if (!content) {
-            console.error('#daily-content not found');
+            console.error('#daily-content still not found after promise resolved');
             return;
         }
 
         content.innerHTML = this.generateEKGHTML();
 
         if (!this.model.events || this.model.events.length === 0) {
-            content.innerHTML += `
-                <div class="text-center text-zinc-400 py-20 text-lg">
-                    No connection events found for this day.<br>
-                    (The main report showed ${this.model.events ? '0' : '?'} events)
-                </div>`;
+            content.innerHTML += `<div class="text-center text-zinc-400 py-20 text-lg">No connection events found for this day.</div>`;
             return;
         }
 
