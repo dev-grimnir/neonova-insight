@@ -137,19 +137,32 @@ class NeonovaReportView extends NeonovaBaseModalView {
             options: { ...commonOptions }
         });
 
-        dailyCanvas.style.cursor = 'pointer';
-        dailyCanvas.addEventListener('click', (e) => {
-            const label = this.metrics.dailyLabels?.[index];
-            if (!label) return;
-
-            let dateStr = label;
-            if (label.includes('/')) {
-                const parts = label.split('/');
-                dateStr = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-            }
-
-            this.controller.openDailyDisconnectDetail(dateStr);
-        });
+            // Inside initCharts() — replace the dailyCanvas click listener with this:
+            dailyCanvas.style.cursor = 'pointer';
+            dailyCanvas.addEventListener('click', (e) => {
+                const chart = Chart.getChart(dailyCanvas);
+                if (!chart) return;
+        
+                const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                if (points.length === 0) return;
+        
+                const index = points[0].index;
+                const label = this.metrics.dailyLabels?.[index];
+        
+                if (!label) return;
+        
+                let dateStr = label;
+        
+                // Convert MM/DD/YYYY or other formats to YYYY-MM-DD if needed
+                if (label.includes('/')) {
+                    const parts = label.split('/');
+                    // Assuming MM/DD/YYYY format from your metrics
+                    dateStr = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                }
+        
+                console.log('Daily bar clicked → requesting details for:', dateStr);
+                this.controller.openDailyDisconnectDetail(dateStr);
+            });
 
         // Rolling chart
         new Chart(document.getElementById('rollingChart'), {
