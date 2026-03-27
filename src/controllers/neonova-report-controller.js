@@ -13,40 +13,36 @@ class NeonovaReportController {
         this.view.show();
     }
 
-    async openDailyDisconnectDetail(clickedDate) {
-        console.log('🚀 openDailyDisconnectDetail START for date:', clickedDate);
+    async openDailyDisconnectDetail(dateStr) {   // now expects "2026-03-22" string
+        console.log('🚀 openDailyDisconnectDetail START for dateStr:', dateStr);
 
         try {
-            const startDate = new Date(clickedDate);
-            startDate.setHours(0, 0, 0, 0);
-
-            const endDate = new Date(clickedDate);
-            endDate.setHours(23, 59, 59, 999);
+            // Parse the clean YYYY-MM-DD string
+            const [year, month, day] = dateStr.split('-').map(Number);
 
             const overrides = {
-                syear: startDate.getFullYear().toString(),
-                smonth: (startDate.getMonth() + 1).toString().padStart(2, '0'),
-                sday: startDate.getDate().toString().padStart(2, '0'),
-                eyear: endDate.getFullYear().toString(),
-                emonth: (endDate.getMonth() + 1).toString().padStart(2, '0'),
-                eday: endDate.getDate().toString().padStart(2, '0')
+                syear:  year.toString(),
+                smonth: month.toString().padStart(2, '0'),
+                sday:   day.toString().padStart(2, '0'),
+                eyear:  year.toString(),
+                emonth: month.toString().padStart(2, '0'),
+                eday:   day.toString().padStart(2, '0')
             };
 
-            console.log('📡 overrides sent:', overrides);
+            console.log('📡 Clean overrides sent to paginateReportLogs:', overrides);
 
-            // Use submitSearch directly (the method the main report relies on)
-            const searchDoc = await NeonovaHTTPController.submitSearch(this.model.username, overrides);
+            const searchDoc = await NeonovaHTTPController.paginateReportLogs(
+                this.model.username,
+                overrides
+            );
 
-            console.log('📦 submitSearch returned type:', typeof searchDoc);
+            console.log('📦 paginateReportLogs returned type:', typeof searchDoc);
 
+            // Robust extraction
             let rawEntries = [];
-            if (searchDoc instanceof Map) {
-                rawEntries = Array.from(searchDoc.values());
-            } else if (Array.isArray(searchDoc)) {
-                rawEntries = searchDoc;
-            } else if (searchDoc && typeof searchDoc === 'object') {
-                rawEntries = Object.values(searchDoc);
-            }
+            if (searchDoc instanceof Map) rawEntries = Array.from(searchDoc.values());
+            else if (Array.isArray(searchDoc)) rawEntries = searchDoc;
+            else if (searchDoc && typeof searchDoc === 'object') rawEntries = Object.values(searchDoc);
 
             console.log('🔄 rawEntries length:', rawEntries.length);
 
@@ -60,7 +56,7 @@ class NeonovaReportController {
             const dailyModel = new NeonovaDailyDisconnectModel(
                 this.model.username,
                 this.model.friendlyName,
-                clickedDate,
+                new Date(dateStr),
                 events
             );
 
