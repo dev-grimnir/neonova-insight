@@ -63,7 +63,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
         `;
     }
 
-   initEKGChart() {
+    initEKGChart() {
         console.log('initEKGChart called — events count:', this.model.events ? this.model.events.length : 0);
     
         const canvas = document.getElementById('ekgChart');
