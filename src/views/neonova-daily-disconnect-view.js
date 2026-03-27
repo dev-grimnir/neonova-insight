@@ -119,20 +119,32 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Modem Status',
-                    data: dataPoints,
-                    borderWidth: 2,
-                    stepped: 'after',
-                    tension: 0,
-                    fill: true,                    // This is what creates the solid blocks
-                    backgroundColor: '#10b98133',  // Green fill = connected
-                    borderColor: '#10b981',
-                    pointRadius: 0,
-                    segment: {
-                        borderColor: (ctx) => (ctx.p0.parsed.y === 0 ? '#ef4444' : '#10b981')
+                datasets: [
+                    {
+                        // Invisible line just for the border
+                        label: 'Status Line',
+                        data: dataPoints,
+                        borderWidth: 3,
+                        stepped: 'after',
+                        tension: 0,
+                        fill: false,
+                        borderColor: '#10b981',
+                        pointRadius: 0
+                    },
+                    {
+                        // This dataset creates the actual filled blocks
+                        label: 'Duration Fill',
+                        data: dataPoints,
+                        borderWidth: 0,
+                        stepped: 'after',
+                        tension: 0,
+                        fill: true,
+                        backgroundColor: (context) => {
+                            return context.raw === 1 ? '#10b98144' : '#ef444444';
+                        },
+                        pointRadius: 0
                     }
-                }]
+                ]
             },
             options: {
                 responsive: true,
@@ -153,7 +165,7 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                             maxRotation: 45,
                             minRotation: 45,
                             autoSkip: true,
-                            maxTicksLimit: 20
+                            maxTicksLimit: 18
                         }
                     }
                 },
