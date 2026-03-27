@@ -64,184 +64,184 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     }
 
    initEKGChart() {
-    console.log('initEKGChart called — events count:', this.model.events ? this.model.events.length : 0);
-
-    const canvas = document.getElementById('ekgChart');
-    if (!canvas) {
-        console.error('EKG canvas #ekgChart not found!');
-        return;
-    }
-
-    if (!this.model.events || this.model.events.length < 2) return;
-
-    const sortedEvents = [...this.model.events].sort((a, b) => 
-        (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
-    );
-
-    if (!sortedEvents[0]?.dateObj) return;
-
-    const firstDate = sortedEvents[0].dateObj;
-    const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
-    const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    // Collapse to real status-change periods
-    const rawPeriods = [];
-    let i = 0;
-    while (i < sortedEvents.length) {
-        const startTime = sortedEvents[i].dateObj.getTime();
-        const isConnected = (sortedEvents[i].status === 'connected' || sortedEvents[i].status === 'Start');
-
-        let j = i + 1;
-        while (j < sortedEvents.length && 
-               (sortedEvents[j].status === 'connected' || sortedEvents[j].status === 'Start') === isConnected) {
-            j++;
+        console.log('initEKGChart called — events count:', this.model.events ? this.model.events.length : 0);
+        
+        const canvas = document.getElementById('ekgChart');
+        if (!canvas) {
+            console.error('EKG canvas #ekgChart not found!');
+            return;
         }
-
-        rawPeriods.push({
-            x: startTime,
-            y: isConnected ? 1 : -1
-        });
-
-        i = j;
-    }
-
-    // Extend final bar to midnight
-    if (rawPeriods.length > 0) {
-        const lastY = rawPeriods[rawPeriods.length - 1].y;
-        rawPeriods.push({ x: dayEnd.getTime(), y: lastY });
-    }
-
-    // Merge short glitches (< 2 minutes)
-    const MIN_DURATION_MS = 2 * 60 * 1000;
-    const chartData = [];
-    let k = 0;
-    while (k < rawPeriods.length - 1) {
-        const current = rawPeriods[k];
-        const next    = rawPeriods[k + 1];
-        const duration = next.x - current.x;
-
-        if (duration < MIN_DURATION_MS && chartData.length > 0) {
+        
+        if (!this.model.events || this.model.events.length < 2) return;
+        
+        const sortedEvents = [...this.model.events].sort((a, b) => 
+            (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
+        );
+        
+        if (!sortedEvents[0]?.dateObj) return;
+        
+        const firstDate = sortedEvents[0].dateObj;
+        const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
+        const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+        
+        // Collapse to real status-change periods
+        const rawPeriods = [];
+        let i = 0;
+        while (i < sortedEvents.length) {
+            const startTime = sortedEvents[i].dateObj.getTime();
+            const isConnected = (sortedEvents[i].status === 'connected' || sortedEvents[i].status === 'Start');
+        
+            let j = i + 1;
+            while (j < sortedEvents.length && 
+                   (sortedEvents[j].status === 'connected' || sortedEvents[j].status === 'Start') === isConnected) {
+                j++;
+            }
+        
+            rawPeriods.push({
+                x: startTime,
+                y: isConnected ? 1 : -1,
+                isConnected: isConnected   // store for tooltip
+            });
+        
+            i = j;
+        }
+        
+        // Extend final bar to midnight
+        if (rawPeriods.length > 0) {
+            const lastY = rawPeriods[rawPeriods.length - 1].y;
+            rawPeriods.push({ 
+                x: dayEnd.getTime(), 
+                y: lastY,
+                isConnected: rawPeriods[rawPeriods.length - 1].isConnected 
+            });
+        }
+        
+        // Merge short glitches (< 2 minutes)
+        const MIN_DURATION_MS = 2 * 60 * 1000;
+        const chartData = [];
+        let k = 0;
+        while (k < rawPeriods.length - 1) {
+            const current = rawPeriods[k];
+            const next    = rawPeriods[k + 1];
+            const duration = next.x - current.x;
+        
+            if (duration < MIN_DURATION_MS && chartData.length > 0) {
+                k++;
+                continue;
+            }
+        
+            chartData.push(current);
             k++;
-            continue;
         }
-
-        chartData.push(current);
-        k++;
-    }
-    if (rawPeriods.length > 0) chartData.push(rawPeriods[rawPeriods.length - 1]);
-
-    // Force full-day coverage (no dead zones)
-    if (chartData.length > 0) {
-        const firstY = chartData[0].y;
-        chartData.unshift({ x: dayStart.getTime(), y: firstY });
-    }
-
-    console.log(`✅ Collapsed ${this.model.events.length} raw events → ${rawPeriods.length} periods → ${chartData.length} final bars (short glitches < 2 min ignored)`);
-
-    if (this._ekgChartInstance) this._ekgChartInstance.destroy();
-
-    this._ekgChartInstance = new Chart(canvas, {
-        type: 'line',
-        data: {
-            datasets: [
-                // GREEN = Connected (above centerline)
-                {
-                    label: 'Connected',
-                    data: chartData.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
+        if (rawPeriods.length > 0) chartData.push(rawPeriods[rawPeriods.length - 1]);
+        
+        // Force full-day coverage (no dead zones)
+        if (chartData.length > 0) {
+            const firstY = chartData[0].y;
+            chartData.unshift({ 
+                x: dayStart.getTime(), 
+                y: firstY,
+                isConnected: chartData[0].isConnected 
+            });
+        }
+        
+        console.log(`✅ Collapsed ${this.model.events.length} raw events → ${rawPeriods.length} periods → ${chartData.length} final bars`);
+        
+        if (this._ekgChartInstance) this._ekgChartInstance.destroy();
+        
+        this._ekgChartInstance = new Chart(canvas, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Modem Status',
+                    data: chartData.map(pt => ({ x: pt.x, y: pt.y })),
                     borderColor: '#10b981',
-                    backgroundColor: '#10b98188',
-                    borderWidth: 1,
+                    backgroundColor: (context) => {
+                        const pt = context.raw;
+                        return pt && pt.isConnected ? '#10b98188' : '#ef444488';
+                    },
+                    borderWidth: 1,                    // thin line, no confusion
                     stepped: 'after',
                     tension: 0,
                     fill: 'origin',
-                    pointRadius: 0
-                },
-                // RED = Disconnected (below centerline)
-                {
-                    label: 'Disconnected',
-                    data: chartData.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
-                    borderColor: '#ef4444',
-                    backgroundColor: '#ef444488',
-                    borderWidth: 1,
-                    stepped: 'after',
-                    tension: 0,
-                    fill: 'origin',
-                    pointRadius: 0
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        title: (items) => '',   // we handle everything in label
-                        label: (context) => {
-                            const currentX = context.parsed.x;
-                            const isConnected = context.dataset.label === 'Connected';
-
-                            // Find start time of this bar (previous data point)
-                            let startX = dayStart.getTime();
-                            const dataPoints = context.dataset.data;
-                            for (let idx = 0; idx < dataPoints.length; idx++) {
-                                if (dataPoints[idx].x >= currentX) {
-                                    if (idx > 0) startX = dataPoints[idx - 1].x;
-                                    break;
+                    pointRadius: 0,
+                    segment: {
+                        borderColor: (ctx) => (ctx.p0.raw && ctx.p0.raw.isConnected) ? '#10b981' : '#ef4444'
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'nearest',
+                        intersect: true,
+                        callbacks: {
+                            label: (context) => {
+                                const pt = context.raw;
+                                if (!pt || !pt.isConnected !== undefined) return '';
+        
+                                const isConnected = pt.isConnected;
+                                const currentX = context.parsed.x;
+        
+                                // Find start of this bar
+                                let startX = dayStart.getTime();
+                                for (let idx = 0; idx < chartData.length; idx++) {
+                                    if (chartData[idx].x >= currentX) {
+                                        if (idx > 0) startX = chartData[idx - 1].x;
+                                        break;
+                                    }
                                 }
+        
+                                const startDate = new Date(startX);
+                                const endDate = new Date(currentX);
+        
+                                const startStr = startDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                                const endStr = endDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        
+                                const durationMs = currentX - startX;
+                                const hours = Math.floor(durationMs / 3600000);
+                                const minutes = Math.floor((durationMs % 3600000) / 60000);
+        
+                                let durationStr = '';
+                                if (hours > 0) durationStr += `${hours}h `;
+                                durationStr += `${minutes}m`;
+        
+                                const status = isConnected ? 'Connected' : 'Disconnected';
+        
+                                return `${status} - ${startStr} - ${endStr} = Duration: ${durationStr.trim()}`;
                             }
-
-                            const startDate = new Date(startX);
-                            const endDate   = new Date(currentX);
-
-                            const startStr = startDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                            const endStr   = endDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-                            // Calculate duration
-                            const durationMs = currentX - startX;
-                            const hours = Math.floor(durationMs / (1000 * 60 * 60));
-                            const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-
-                            let durationStr = '';
-                            if (hours > 0) durationStr += `${hours}h `;
-                            if (minutes > 0 || hours === 0) durationStr += `${minutes}m`;
-
-                            const status = isConnected ? 'Connected' : 'Disconnected';
-
-                            return `${status} - ${startStr} - ${endStr} - Duration: ${durationStr.trim()}`;
                         }
                     }
-                }
-            },
-            scales: {
-                x: {
-                    type: 'linear',
-                    min: dayStart.getTime(),
-                    max: dayEnd.getTime(),
-                    grid: { color: '#27272a', lineWidth: 1 },
-                    ticks: {
-                        color: '#64748b',
-                        maxTicksLimit: 24,
-                        callback: (v) => new Date(v).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: dayStart.getTime(),
+                        max: dayEnd.getTime(),
+                        grid: { color: '#27272a', lineWidth: 1 },
+                        ticks: {
+                            color: '#64748b',
+                            maxTicksLimit: 24,
+                            callback: (v) => new Date(v).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                        }
+                    },
+                    y: {
+                        min: -1.2,
+                        max: 1.2,
+                        ticks: { display: false },
+                        grid: {
+                            color: (ctx) => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
+                            lineWidth: (ctx) => ctx.tick.value === 0 ? 4 : 1.5
+                        }
                     }
                 },
-                y: {
-                    min: -1.2,
-                    max: 1.2,
-                    ticks: { display: false },
-                    grid: {
-                        color: (ctx) => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
-                        lineWidth: (ctx) => ctx.tick.value === 0 ? 4 : 1.5
-                    }
-                }
-            },
-            layout: { padding: { right: 40, left: 20, top: 30, bottom: 20 } }
+                layout: { padding: { right: 40, left: 20, top: 30, bottom: 20 } }
+            }
+        });
         }
-    });
-}
     
     attachListeners() {
         const closeBtn = this.modal.querySelector('#close-daily-btn');
