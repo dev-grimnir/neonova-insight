@@ -178,15 +178,16 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     tooltip: {
                         intersect: true,
                         mode: 'nearest',
+                        position: 'nearest',
                         callbacks: {
                             label: (context) => {
                                 if (context.parsed.y === 0) return '';
-    
+
                                 const isConnected = context.parsed.y > 0;
                                 const currentX = context.parsed.x;
                                 const datasetData = context.dataset.data;
-    
-                                // Find start of this bar
+
+                                // Find the start of this bar (previous data point)
                                 let startX = dayStart.getTime();
                                 for (let idx = 0; idx < datasetData.length; idx++) {
                                     if (datasetData[idx].x >= currentX) {
@@ -194,17 +195,23 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                                         break;
                                     }
                                 }
-    
-                                const startStr = new Date(startX).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                                const endStr   = new Date(currentX).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    
+
+                                const startStr = new Date(startX).toLocaleTimeString([], { 
+                                    hour: 'numeric', 
+                                    minute: '2-digit' 
+                                });
+                                const endStr = new Date(currentX).toLocaleTimeString([], { 
+                                    hour: 'numeric', 
+                                    minute: '2-digit' 
+                                });
+
                                 const durMs = currentX - startX;
                                 const hours = Math.floor(durMs / 3600000);
-                                const mins  = Math.floor((durMs % 3600000) / 60000);
+                                const mins = Math.floor((durMs % 3600000) / 60000);
                                 const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-    
+
                                 const status = isConnected ? 'Connected' : 'Disconnected';
-    
+
                                 return `${status} - ${startStr} - ${endStr} = Duration: ${durationStr}`;
                             }
                         }
