@@ -74,18 +74,29 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
     
         if (!this.model.events || this.model.events.length < 2) return;
     
-        // Sort events chronologically (defensive)
+        // Sort events by time
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
         );
     
-        // Build data points with real Date objects for time scaling
-        const chartData = sortedEvents.map(event => ({
-            x: event.dateObj || new Date(),  // must be a real Date
+        if (!sortedEvents[0].dateObj) return;
+    
+        // Calculate full day range (00:00 → 24:00)
+        const firstDate = sortedEvents[0].dateObj;
+        const dayStart = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate(), 0, 0, 0);
+        const dayEnd   = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    
+        // Build data with real timestamps (x = milliseconds)
+        let chartData = sortedEvents.map(event => ({
+            x: event.dateObj.getTime(),
             y: (event.status === 'connected' || event.status === 'Start') ? 1 : -1
         }));
     
-        // Destroy previous instance if modal is reopened
+        // Extend the LAST bar all the way to midnight
+        const lastY = chartData[chartData.length - 1].y;
+        chartData.push({ x: dayEnd.getTime(), y: lastY });
+    
+        // Destroy any old chart instance
         if (this._ekgChartInstance) {
             this._ekgChartInstance.destroy();
         }
@@ -97,9 +108,9 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     label: 'Modem Status',
                     data: chartData,
                     borderWidth: 4,
-                    stepped: 'after',          // creates the rectangular "bar" blocks
+                    stepped: 'after',          // rectangular EKG blocks
                     tension: 0,
-                    fill: 'origin',            // fills from the line to the center line (y=0)
+                    fill: 'origin',            // fill to center line
                     pointRadius: 0,
                     segment: {
                         borderColor: (ctx) => (ctx.p0.parsed.y < 0 ? '#ef4444' : '#10b981'),
@@ -114,20 +125,19 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            title: (ctx) => ctx[0].label,   // shows full time
+                            title: (tooltipItems) => {
+                                const date = new Date(tooltipItems[0].parsed.x);
+                                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                            },
                             label: (ctx) => ctx.parsed.y > 0 ? '✅ Connected' : '❌ Disconnected'
                         }
                     }
                 },
                 scales: {
                     x: {
-                        type: 'time',                   // ← THIS IS THE KEY FIX
-                        time: {
-                            unit: 'hour',
-                            displayFormats: {
-                                hour: 'h a'             // 12 AM, 1 AM, etc. (clean)
-                            }
-                        },
+                        type: 'linear',           // ← no date adapter required
+                        min: dayStart.getTime(),
+                        max: dayEnd.getTime(),
                         grid: {
                             color: '#27272a',
                             lineWidth: 1
@@ -136,7 +146,11 @@ class NeonovaDailyDisconnectView extends NeonovaBaseModalView {
                             color: '#64748b',
                             maxTicksLimit: 24,
                             maxRotation: 0,
-                            autoSkip: true
+                            autoSkip: true,
+                            callback: (value) => {
+                                const date = new Date(value);
+                                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                            }
                         }
                     },
                     y: {
