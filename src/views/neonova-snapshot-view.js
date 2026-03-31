@@ -170,7 +170,7 @@ this.#chart = new Chart(ctx, {
     }
   });
 }
-}  
+  
 
   #buildDatasetsFromPeriods() {
     const dataPoints = [];
