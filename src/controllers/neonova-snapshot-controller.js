@@ -12,16 +12,6 @@ class NeonovaSnapshotController {
     this.#view = new NeonovaSnapshotView(containerElement);
   }
 
-  async loadForDate(snapshotDate, username, friendlyName = 'Modem') {
-    this.#view.showLoading();   // ← show spinner immediately
-  
-    console.log('🔵 [SnapshotController] loadForDate START');
-  
-    // ... rest of your fetch, clean, model, metrics, periodsList code ...
-  
-    this.#view.setData(periodsList, uptimePercent, this.#model.snapshotDate);
-  }
-
   // PRIMARY ENTRY POINT – fully self-contained
   async loadForDate(snapshotDate, username, friendlyName = 'Modem') {
     console.log('🔵 [SnapshotController] loadForDate START');
