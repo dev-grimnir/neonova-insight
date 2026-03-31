@@ -22,7 +22,7 @@ class NeonovaAnalyzer {
       // Only validity check — no range filter, no timezone math
       const events = (cleanedEvents || [])
         .map(e => ({
-          time: new Date(e.timestamp),
+          time: new Date(e.timestamp.replace(' ', 'T')),
           connected: !!e.connected,
           originalTimestamp: e.timestamp
         }))
