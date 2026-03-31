@@ -17,6 +17,17 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     this.#container = containerElement;
   }
 
+  showLoading() {
+    this.#container.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:320px;background:#f8f9fa;border-radius:8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="spinner" style="border:4px solid #f3f3f3;border-top:4px solid #10b981;border-radius:50%;width:36px;height:36px;animation:spin 1s linear infinite;margin-bottom:12px;"></div>
+          <p style="margin:0;color:#666;font-size:15px;">Building Neonova Snapshot...</p>
+        </div>
+      </div>
+    `;
+  }
+
   /**
    * Single source of truth from controller.
    * periodsList = [{ start: Date, end: Date, connected: boolean, duration: number }, ...]
