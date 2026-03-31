@@ -13,40 +13,70 @@ class NeonovaSnapshotController {
   }
 
   // PRIMARY ENTRY POINT – fully self-contained
-async showSnapshotForDate(snapshotDate, username, friendlyName = 'Modem') {
-  console.log('🔵 [ReportController] showSnapshotForDate called for', snapshotDate);
+  async loadForDate(snapshotDate, username, friendlyName = 'Modem') {
+    console.log('🔵 [SnapshotController] loadForDate START');
+    this.#view.showLoading();
+    // 1. Fetch raw Radius logs for the exact day
+    const rawRadiusData = await NeonovaHTTPController.paginateReportLogs(
+      username,
+      snapshotDate,
+      snapshotDate,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ) || [];
 
-  const modalContainer = document.createElement('div');
-  modalContainer.style.cssText = `
-    position: fixed; 
-    top: 0; left: 0; 
-    width: 100%; height: 100%; 
-    z-index: 99999; 
-    background: rgba(0,0,0,0.75); 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-  `;
+    console.log('🔵 [SnapshotController] rawRadiusData fetched, length:', rawRadiusData?.length);
+    
+    // 2. Sanitize via NeonovaCollector (single source of truth: cleanedEntries)
+    const cleanedBlob = NeonovaCollector.cleanEntries(rawRadiusData);
+    const cleanedEvents = cleanedBlob.cleanedEntries;
 
-  const snapshotController = new NeonovaSnapshotController(modalContainer);
+    console.log('🔵 [SnapshotController] cleanedEvents length:', cleanedEvents?.length);
+    
+    // 3. Create pure model
+    this.#model = new NeonovaSnapshotModel(cleanedEvents, snapshotDate, friendlyName);
 
-  document.body.appendChild(modalContainer);
-  console.log('🔵 [ReportController] modalContainer appended to DOM');
+    console.log('🔵 [SnapshotController] model created');
+    
+    // 4. Get uptime % from existing Analyzer method
+    const startOfDay = new Date(snapshotDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay.getTime() + 86400000);
 
-  await snapshotController.loadForDate(snapshotDate, username, friendlyName);
+    const metricsBlob = NeonovaAnalyzer.computeMetrics(
+      cleanedEvents,
+      startOfDay,
+      endOfDay
+    );
 
-  // Force visibility in case base modal does nothing
-  modalContainer.style.display = 'flex';
+    const uptimePercent = metricsBlob.percentConnected || 0;
 
-  // Click outside to close
-  modalContainer.addEventListener('click', (e) => {
-    if (e.target === modalContainer) {
-      modalContainer.remove();
-    }
-  });
+    console.log('🔵 [SnapshotController] uptime calculated:', uptimePercent + '%');
 
-  console.log('✅ [ReportController] showSnapshotForDate completed');
-}
+    // 5. Prepare the SINGLE list of statuses the view actually needs
+    //    (wrapped start + end periods, every raw event preserved)
+    const periodsList = NeonovaAnalyzer.computeSnapshotPeriods(
+      cleanedEvents,
+      startOfDay,
+      endOfDay
+    );
+
+    console.log('🔵 [SnapshotController] periodsList created, length:', periodsList.length);
+
+    // 6. Feed the one source of truth to the view – nothing more
+    this.#view.setData(periodsList, uptimePercent, this.#model.snapshotDate);
+
+    console.log('🔵 [SnapshotController] setData called on view');
+    
+    // 7. Only call show() / hide() on the view (exact interface from other modals)
+    this.#view.show();
+
+    console.log('✅ [SnapshotController] loadForDate FINISHED');
+  }
 
   // Optional direct-load path (pre-cleaned events already available)
   loadSnapshot(snapshotDate, preCleanedEvents, friendlyName = 'Modem') {
