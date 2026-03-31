@@ -6,30 +6,48 @@ class NeonovaAnalyzer {
     // src/controllers/NeonovaAnalyzer.js
     // =============================================
     static computeSnapshotPeriods(cleanedEvents, requestedStart, requestedEnd) {
+      console.log('🔍 [Analyzer] computeSnapshotPeriods START');
+      console.log('🔍 [Analyzer] cleanedEvents length:', cleanedEvents?.length || 0);
+    
       const start = new Date(requestedStart);
       start.setHours(0, 0, 0, 0);
+      console.log('🔍 [Analyzer] startOfDay:', start.toISOString());
     
       const end = new Date(requestedEnd);
       end.setHours(0, 0, 0, 0);
-      end.setDate(end.getDate() + 1);   // next midnight
+      end.setDate(end.getDate() + 1);
+      console.log('🔍 [Analyzer] endOfDay:', end.toISOString());
     
+      // Normalize events
       const events = (cleanedEvents || [])
         .map(e => ({
           time: new Date(e.timestamp),
-          connected: !!e.connected
+          connected: !!e.connected,
+          originalTimestamp: e.timestamp
         }))
         .filter(e => !isNaN(e.time.getTime()) && e.time >= start && e.time < end)
         .sort((a, b) => a.time - b.time);
+    
+      console.log('🔍 [Analyzer] filtered & sorted events:', events.length);
+      if (events.length > 0) {
+        console.log('🔍 [Analyzer] First event:', events[0].originalTimestamp, '→', events[0].connected ? 'CONNECTED' : 'DISCONNECTED');
+        console.log('🔍 [Analyzer] Last event: ', events[events.length-1].originalTimestamp, '→', events[events.length-1].connected ? 'CONNECTED' : 'DISCONNECTED');
+      }
     
       const periods = [];
     
       let currentTime = new Date(start);
       let currentState = false;   // default at midnight
     
-      // If there are events, the very first event sets the state from midnight onward
+      console.log('🔍 [Analyzer] Initial state at midnight:', currentState ? 'CONNECTED' : 'DISCONNECTED');
+    
+      // First event handling
       if (events.length > 0) {
         const first = events[0];
+        console.log('🔍 [Analyzer] Processing first event at', first.time.toISOString());
+    
         if (first.time > start) {
+          console.log('🔍 [Analyzer] Adding midnight → first event period (state =', currentState, ')');
           periods.push({
             start: new Date(currentTime),
             end: new Date(first.time),
@@ -39,14 +57,18 @@ class NeonovaAnalyzer {
           currentTime = new Date(first.time);
           currentState = first.connected;
         } else {
-          currentState = first.connected;   // first event is exactly at/after midnight
+          currentState = first.connected;
           currentTime = new Date(first.time);
         }
-        events.shift();   // consume first event
+        events.shift();
       }
     
-      // Process every remaining event (this is what was missing)
-      for (const event of events) {
+      // All remaining events
+      console.log('🔍 [Analyzer] Processing remaining', events.length, 'events...');
+      for (let i = 0; i < events.length; i++) {
+        const event = events[i];
+        console.log(`🔍 [Analyzer] Event #${i+1} → ${event.time.toISOString()} | ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
+    
         periods.push({
           start: new Date(currentTime),
           end: new Date(event.time),
@@ -58,7 +80,8 @@ class NeonovaAnalyzer {
         currentTime = new Date(event.time);
       }
     
-      // Final segment to end of day
+      // Final segment
+      console.log('🔍 [Analyzer] Adding final period to end of day (state =', currentState, ')');
       periods.push({
         start: new Date(currentTime),
         end: new Date(end),
@@ -66,19 +89,16 @@ class NeonovaAnalyzer {
         duration: end.getTime() - currentTime.getTime()
       });
     
-      // Edge case: no events at all
-      if (periods.length === 0) {
-        periods.push({
-          start: new Date(start),
-          end: new Date(end),
-          connected: false,
-          duration: end.getTime() - start.getTime()
-        });
-      }
+      console.log('✅ [Analyzer] computeSnapshotPeriods FINISHED with', periods.length, 'periods');
+      console.table(periods.map(p => ({
+        start: p.start.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}),
+        end:   p.end.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}),
+        status: p.connected ? 'CONNECTED' : 'DISCONNECTED',
+        durationMin: Math.round(p.duration / 60000)
+      })));
     
-      console.log('✅ computeSnapshotPeriods finished with', periods.length, 'periods');
       return periods;
-    }    
+    } 
 
     
     /**
