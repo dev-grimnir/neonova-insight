@@ -38,6 +38,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     this.#periodsList = Array.isArray(periodsList) ? periodsList : [];
     this.#uptimePercent = Number(uptimePercent) || 0;
     this.#snapshotDate = new Date(snapshotDate);
+  
+    // Clear loading state before rendering
+    this.#container.innerHTML = '';
     console.log('🔵 [SnapshotView] data stored, calling #renderChart');
     this.#renderChart();
   }
@@ -77,6 +80,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     console.log('🔵 [SnapshotView] header created');
     // Canvas (create once)
     let canvas = this.#container.querySelector('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '380px';
     if (!canvas) {
       canvas = document.createElement('canvas');
       this.#container.appendChild(canvas);
@@ -137,11 +142,15 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: {
-            type: 'category',
-            grid: { color: '#e5e7eb', lineWidth: 1 },
-            ticks: { maxRotation: 0, autoSkipPadding: 15 }
-          },
+            x: {
+              type: 'category',
+              grid: { color: '#e5e7eb', lineWidth: 1 },
+              ticks: { 
+                maxRotation: 45, 
+                autoSkip: true,
+                autoSkipPadding: 20 
+              }
+            },
           y: {                                 // ← comma added
             min: -1.2,
             max: 1.2,
