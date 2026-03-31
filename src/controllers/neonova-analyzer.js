@@ -1,53 +1,50 @@
+// src/controllers/NeonovaAnalyzer.js
+
 class NeonovaAnalyzer {
 
     // =============================================
-    // NeonovaAnalyzer – NEW METHOD
-    // Add this static method to the existing NeonovaAnalyzer class
-    // src/controllers/NeonovaAnalyzer.js
+    // NeonovaAnalyzer.computeSnapshotPeriods
+    // REPLACE YOUR ENTIRE METHOD WITH THIS VERSION
     // =============================================
+    
     static computeSnapshotPeriods(cleanedEvents, requestedStart, requestedEnd) {
       console.log('🔍 [Analyzer] computeSnapshotPeriods START');
       console.log('🔍 [Analyzer] cleanedEvents length:', cleanedEvents?.length || 0);
     
       const start = new Date(requestedStart);
       start.setHours(0, 0, 0, 0);
-      console.log('🔍 [Analyzer] startOfDay:', start.toISOString());
+      console.log('🔍 [Analyzer] startOfDay (local midnight):', start.toLocaleString());
     
-      const end = new Date(requestedEnd);
-      end.setHours(0, 0, 0, 0);
+      const end = new Date(start);
       end.setDate(end.getDate() + 1);
-      console.log('🔍 [Analyzer] endOfDay:', end.toISOString());
+      console.log('🔍 [Analyzer] endOfDay (local midnight):', end.toLocaleString());
     
-      // Normalize events
+      // Normalize events – REMOVE the timezone-killing filter
       const events = (cleanedEvents || [])
         .map(e => ({
           time: new Date(e.timestamp),
           connected: !!e.connected,
           originalTimestamp: e.timestamp
         }))
-        .filter(e => !isNaN(e.time.getTime()) && e.time >= start && e.time < end)
+        .filter(e => !isNaN(e.time.getTime()))   // only valid dates, no range filter
         .sort((a, b) => a.time - b.time);
     
-      console.log('🔍 [Analyzer] filtered & sorted events:', events.length);
+      console.log('🔍 [Analyzer] valid events after sort:', events.length);
       if (events.length > 0) {
         console.log('🔍 [Analyzer] First event:', events[0].originalTimestamp, '→', events[0].connected ? 'CONNECTED' : 'DISCONNECTED');
-        console.log('🔍 [Analyzer] Last event: ', events[events.length-1].originalTimestamp, '→', events[events.length-1].connected ? 'CONNECTED' : 'DISCONNECTED');
+        console.log('🔍 [Analyzer] Last event :', events[events.length-1].originalTimestamp, '→', events[events.length-1].connected ? 'CONNECTED' : 'DISCONNECTED');
       }
     
       const periods = [];
-    
       let currentTime = new Date(start);
-      let currentState = false;   // default at midnight
+      let currentState = false;
     
       console.log('🔍 [Analyzer] Initial state at midnight:', currentState ? 'CONNECTED' : 'DISCONNECTED');
     
-      // First event handling
       if (events.length > 0) {
         const first = events[0];
-        console.log('🔍 [Analyzer] Processing first event at', first.time.toISOString());
-    
         if (first.time > start) {
-          console.log('🔍 [Analyzer] Adding midnight → first event period (state =', currentState, ')');
+          console.log('🔍 [Analyzer] Adding midnight → first event period');
           periods.push({
             start: new Date(currentTime),
             end: new Date(first.time),
@@ -63,11 +60,10 @@ class NeonovaAnalyzer {
         events.shift();
       }
     
-      // All remaining events
       console.log('🔍 [Analyzer] Processing remaining', events.length, 'events...');
       for (let i = 0; i < events.length; i++) {
         const event = events[i];
-        console.log(`🔍 [Analyzer] Event #${i+1} → ${event.time.toISOString()} | ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
+        console.log(`🔍 [Analyzer] Event #${i+1} → ${event.originalTimestamp} | ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
     
         periods.push({
           start: new Date(currentTime),
@@ -80,8 +76,7 @@ class NeonovaAnalyzer {
         currentTime = new Date(event.time);
       }
     
-      // Final segment
-      console.log('🔍 [Analyzer] Adding final period to end of day (state =', currentState, ')');
+      console.log('🔍 [Analyzer] Adding final period to end of day');
       periods.push({
         start: new Date(currentTime),
         end: new Date(end),
@@ -98,8 +93,7 @@ class NeonovaAnalyzer {
       })));
     
       return periods;
-    } 
-
+    }
     
     /**
      * PUBLIC API — SIGNATURE NOW EXTENDED (but fully backward-compatible)
