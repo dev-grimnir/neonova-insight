@@ -46,7 +46,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
       flex-direction: column;
       width: 100%;
       height: 100%;
-      padding: 0 16px;
+      padding: 16px;
+      box-sizing: border-box;
     `;
     console.log('🔵 [SnapshotView] data stored, calling #renderChart');
     this.#renderChart();
@@ -195,38 +196,39 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         }
       }
     });
+    console.log('🔵 [SnapshotView] chart instantiated successfully with', dataPoints.length, 'points');
   }
 
-#buildDatasetsFromPeriods() {
-  const dataPoints = [];
-
-  if (this.#periodsList.length === 0) {
+  #buildDatasetsFromPeriods() {
+    const dataPoints = [];
+  
+    if (this.#periodsList.length === 0) {
+      return { dataPoints };
+    }
+  
+    const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
+  
+    const y = (connected) => connected ? 1 : -1;
+  
+    this.#periodsList.forEach((period) => {
+      dataPoints.push({
+        x: minutesSinceMidnight(period.start),
+        y: y(period.connected)
+      });
+    });
+  
+    // Extend the LAST period all the way to midnight (right edge of chart)
+    const lastPeriod = this.#periodsList[this.#periodsList.length - 1];
+    if (lastPeriod) {
+      const nextMidnightMinutes = 24 * 60; // 1440 = midnight next day
+      dataPoints.push({
+        x: nextMidnightMinutes,
+        y: y(lastPeriod.connected)
+      });
+    }
+  
     return { dataPoints };
   }
-
-  const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
-
-  const y = (connected) => connected ? 1 : -1;
-
-  this.#periodsList.forEach((period) => {
-    dataPoints.push({
-      x: minutesSinceMidnight(period.start),
-      y: y(period.connected)
-    });
-  });
-
-  // Extend the last period all the way to the right edge (midnight next day)
-  const lastPeriod = this.#periodsList[this.#periodsList.length - 1];
-  if (lastPeriod) {
-    const nextMidnightMinutes = 24 * 60; // 1440 minutes = midnight
-    dataPoints.push({
-      x: nextMidnightMinutes,
-      y: y(lastPeriod.connected)
-    });
-  }
-
-  return { dataPoints };
-}
 
   #formatDuration(ms) {
     const hours = Math.floor(ms / 3600000);
