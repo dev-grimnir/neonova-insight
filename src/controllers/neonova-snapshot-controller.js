@@ -25,6 +25,7 @@ class NeonovaSnapshotController {
   // PRIMARY ENTRY POINT – fully self-contained
   async loadForDate(snapshotDate, username, friendlyName = 'Modem') {
     console.log('🔵 [SnapshotController] loadForDate START');
+    this.#view.showLoading();
     // 1. Fetch raw Radius logs for the exact day
     const rawRadiusData = await NeonovaHTTPController.paginateReportLogs(
       username,
