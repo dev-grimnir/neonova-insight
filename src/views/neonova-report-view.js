@@ -138,7 +138,7 @@ class NeonovaReportView extends NeonovaBaseModalView {
         });
 
             dailyCanvas.style.cursor = 'pointer';
-            dailyCanvas.addEventListener('click', (e) => {
+            async dailyCanvas.addEventListener('click', (e) => {
                 const chart = Chart.getChart(dailyCanvas);
                 if (!chart) return;
         
