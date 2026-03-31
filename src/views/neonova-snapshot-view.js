@@ -77,6 +77,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     this.#chart = new Chart(ctx, {
       type: 'line',
       data: {
+        labels: labels,
         datasets: [
           {
             label: 'Connected',
@@ -116,11 +117,11 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         maintainAspectRatio: false,
         scales: {
           x: {
-            type: 'category',                // ← new
+            type: 'category',
             grid: { color: '#e5e7eb', lineWidth: 1 },
             ticks: { maxRotation: 0, autoSkipPadding: 15 }
-          }
-          y: {
+          },
+          y: {                                 // ← comma added
             min: -1.2,
             max: 1.2,
             display: false,
