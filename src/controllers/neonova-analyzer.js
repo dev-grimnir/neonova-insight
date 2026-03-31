@@ -21,11 +21,17 @@ class NeonovaAnalyzer {
     
       // Only validity check — no range filter, no timezone math
       const events = (cleanedEvents || [])
-        .map(e => ({
-          time: new Date(e.timestamp.replace(' ', 'T')),
-          connected: !!e.connected,
-          originalTimestamp: e.timestamp
-        }))
+        .map(e => {
+          let ts = e.timestamp;
+          if (typeof ts === 'string') {
+            ts = ts.replace(' ', 'T');           // safe replace
+          }
+          return {
+            time: new Date(ts),
+            connected: !!e.connected,
+            originalTimestamp: e.timestamp
+          };
+        })
         .filter(e => !isNaN(e.time.getTime()))
         .sort((a, b) => a.time - b.time);
     
