@@ -95,146 +95,108 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
 
   console.log('🔵 [SnapshotView] canvas ready, building datasets');
 
-  const { labels, connectedData, disconnectedData, centerData } = this.#buildDatasetsFromPeriods();
-  console.log('🔵 [SnapshotView] datasets built, labels length:', labels.length);
-    console.log('🔵 [SnapshotView] datasets built, labels length:', labels.length);
-    this.#chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Connected',
-            data: connectedData,
-            borderColor: 'transparent',
-            backgroundColor: 'rgba(16, 185, 129, 0.85)',
-            fill: 'origin',
-            stepped: 'after',
-            borderWidth: 0,
-            pointRadius: 0,
-            tension: 0
-          },
-          {
-            label: 'Disconnected',
-            data: disconnectedData,
-            borderColor: 'transparent',
-            backgroundColor: 'rgba(239, 68, 68, 0.85)',
-            fill: 'origin',
-            stepped: 'after',
-            borderWidth: 0,
-            pointRadius: 0,
-            tension: 0
-          },
-          {
-            label: 'Center Line',
-            data: centerData,
-            borderColor: '#1f2937',
-            borderWidth: 4,
-            fill: false,
-            pointRadius: 0,
-            tension: 0
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: {
-              type: 'category',
-              grid: { color: '#e5e7eb', lineWidth: 1 },
-              ticks: { 
-                maxRotation: 45, 
-                autoSkip: true,
-                autoSkipPadding: 20 
-              }
-            },
-          y: {                                 // ← comma added
-            min: -1.2,
-            max: 1.2,
-            display: false,
-            grid: { display: false }
-          }
+  const { dataPoints, startOfDay, endOfDay } = this.#buildDatasetsFromPeriods();
+
+this.#chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    datasets: [
+      {
+        label: 'Connection Status',
+        data: dataPoints,
+        borderColor: 'transparent',
+        backgroundColor: (context) => {
+          return context.raw.y > 0 
+            ? 'rgba(16, 185, 129, 0.85)'   // green above the line
+            : 'rgba(239, 68, 68, 0.85)';   // red below the line
         },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            enabled: true,
-            mode: 'nearest',
-            intersect: false,
-            backgroundColor: '#111827',
-            titleColor: '#fff',
-            bodyColor: '#fff',
-            borderColor: '#374151',
-            borderWidth: 1,
-            padding: 12,
-            displayColors: false,
-            callbacks: {
-              title: () => '',
-              label: (context) => {
-                if (context.dataset.label === 'Center Line') return '';
-                const period = this.#periodsList[context.dataIndex];
-                if (!period) return context.dataset.label;
+        fill: 'origin',
+        stepped: 'after',
+        borderWidth: 0,
+        pointRadius: 0,
+        tension: 0
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'minute',
+          displayFormats: { minute: 'HH:mm' }
+        },
+        min: startOfDay,
+        max: endOfDay,
+        grid: { color: '#e5e7eb', lineWidth: 1 },
+        ticks: { maxRotation: 0, autoSkipPadding: 15 }
+      },
+      y: {
+        min: -1.2,
+        max: 1.2,
+        display: false,
+        grid: { display: false }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        mode: 'nearest',
+        intersect: false,
+        backgroundColor: '#111827',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#374151',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          title: () => '',
+          label: (context) => {
+            const period = this.#periodsList[context.dataIndex];
+            if (!period) return '';
 
-                const status = period.connected ? 'Connected' : 'Disconnected';
-                const startStr = period.start.toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                });
-                const endStr = period.end.toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                });
-                const durationStr = this.#formatDuration(period.duration);
+            const status = period.connected ? 'Connected' : 'Disconnected';
+            const startStr = period.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const endStr = period.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const durationStr = this.#formatDuration(period.duration);
 
-                return `${status} - ${startStr} - ${endStr} = Duration: ${durationStr}`;
-              }
-            }
+            return `${status} - ${startStr} - ${endStr} = Duration: ${durationStr}`;
           }
         }
       }
-    });
-    console.log('✅ [SnapshotView] new Chart() created successfully');
+    }
   }
+});
 
   #buildDatasetsFromPeriods() {
-    if (this.#periodsList.length === 0) {
-      return { labels: [], connectedData: [], disconnectedData: [], centerData: [] };
-    }
+    const dataPoints = [];
   
-    // Build one entry per period with proper duration weighting
-    const labels = [];
-    const connectedData = [];
-    const disconnectedData = [];
-    const centerData = [];
-  
-    this.#periodsList.forEach((period, index) => {
-      const label = period.start.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-  
-      labels.push(label);
-      connectedData.push(period.connected ? 1 : 0);
-      disconnectedData.push(period.connected ? 0 : -1);
-      centerData.push(0);
+    this.#periodsList.forEach(period => {
+      const y = period.connected ? 1 : -1;
+      dataPoints.push({ x: period.start, y: y });
+      dataPoints.push({ x: period.end,   y: y });
     });
   
-    // Add the final point to close the last period
+    // Close the chart at the end of the day
     const lastPeriod = this.#periodsList[this.#periodsList.length - 1];
-    labels.push(lastPeriod.end.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }));
-    connectedData.push(lastPeriod.connected ? 1 : 0);
-    disconnectedData.push(lastPeriod.connected ? 0 : -1);
-    centerData.push(0);
+    if (lastPeriod) {
+      dataPoints.push({ x: lastPeriod.end, y: lastPeriod.connected ? 1 : -1 });
+    }
   
-    return { labels, connectedData, disconnectedData, centerData };
+    const startOfDay = new Date(this.#snapshotDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+  
+    return {
+      dataPoints,
+      startOfDay,
+      endOfDay
+    };
   }
 
   #formatDuration(ms) {
