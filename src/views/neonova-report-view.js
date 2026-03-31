@@ -160,7 +160,7 @@ class NeonovaReportView extends NeonovaBaseModalView {
                 }
         
                 console.log('Daily bar clicked → requesting details for:', dateStr);
-                await this.controller.showSnapshotForDate(dateStr, this.username, thils.friendlyName);
+                await this.controller.showSnapshotForDate(dateStr, this.username, this.friendlyName);
             });
 
         // Rolling chart
