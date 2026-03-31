@@ -20,16 +20,25 @@ class NeonovaAnalyzer {
       console.log('🔍 [Analyzer] endOfDay:', end.toLocaleString());
     
       // Only validity check — no range filter, no timezone math
+      // Diagnostic map — tell us the exact format
       const events = (cleanedEvents || [])
         .map(e => {
-          let ts = e.timestamp;
+          const rawTs = e.timestamp;
+          console.log('🔍 Raw timestamp from cleanedEvents:', rawTs, ' (type:', typeof rawTs, ')');
+
+          let ts = rawTs;
           if (typeof ts === 'string') {
-            ts = ts.replace(' ', 'T');           // safe replace
+            ts = ts.replace(' ', 'T');
+            console.log('🔍 After replace(" ", "T") →', ts);
           }
+
+          const parsed = new Date(ts);
+          console.log('🔍 new Date() result →', parsed, ' (valid:', !isNaN(parsed.getTime()), ')');
+
           return {
-            time: new Date(ts),
+            time: parsed,
             connected: !!e.connected,
-            originalTimestamp: e.timestamp
+            originalTimestamp: rawTs
           };
         })
         .filter(e => !isNaN(e.time.getTime()))
