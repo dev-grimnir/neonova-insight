@@ -123,11 +123,10 @@ this.#chart = new Chart(ctx, {
     maintainAspectRatio: false,
     scales: {
       x: {
-        type: 'time',
-        time: {
-          unit: 'minute',
-          displayFormats: { minute: 'HH:mm' }
-        },
+        type: 'category',
+        grid: { color: '#e5e7eb', lineWidth: 1 },
+        ticks: { maxRotation: 0, autoSkipPadding: 15 }
+      },
         min: startOfDay,
         max: endOfDay,
         grid: { color: '#e5e7eb', lineWidth: 1 },
