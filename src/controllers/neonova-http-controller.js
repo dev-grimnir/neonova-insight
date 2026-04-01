@@ -198,7 +198,7 @@ class NeonovaHTTPController {
      **************************************************************************/
 
     static async safeFetch(url, options = {}) {
-        console.log("NeonovaHTTPController.safeFetch -> Search URL: " + url);
+        
         const defaultOptions = {
             credentials: 'include',
             cache: 'no-cache',
@@ -380,7 +380,6 @@ class NeonovaHTTPController {
             );
     
             const url = this.#buildPageUrl(params);
-            console.log("NeonovaHTTPController.paginateReportLogs() -> search URL: " + url);
     
             let html;
             try {
@@ -425,7 +424,6 @@ class NeonovaHTTPController {
     
         if (entries.length > 0) {
             const last = entries[entries.length - 1];
-            console.log(`Last entry: ${last.timestamp || ''} | status: ${last.status || ''}`);
         }
     
         return entries;
