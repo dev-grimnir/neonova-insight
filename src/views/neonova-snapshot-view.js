@@ -88,12 +88,13 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
 
     // Canvas with safe fixed height that fits the enlarged modal
     let canvas = this.#container.querySelector('canvas');
-    canvas.style.border = '4px solid lime';
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvas.style.cssText = `width: 100% !important; height: 520px !important; display: block;`;
       this.#container.appendChild(canvas);
     }
+
+    canvas.style.border = '4px solid lime';
 
     const ctx = canvas.getContext('2d');
     if (this.#chart) this.#chart.destroy();
