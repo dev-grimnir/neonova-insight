@@ -33,47 +33,32 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     this.#uptimePercent = Number(uptimePercent) || 0;
     this.#snapshotDate = new Date(snapshotDate);
 
-    // Clear and prepare container — do NOT render chart here
-    this.#container.innerHTML = '';
-    this.#container.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      padding: 20px;
-      box-sizing: border-box;
-      background: #111827;
-    `;
+    // ONLY store data — DO NOT render or clear yet
+    console.log('🔵 [SnapshotView] data stored — will render after modal is shown');
   }
 
   show() {
-    super.show();   // Let base class handle the modal open
-    console.log('🔵 [SnapshotView] show() called');
+    super.show();  // Let base class fully create/animate the modal first
+    console.log('🔵 [SnapshotView] show() called — base modal should now be visible');
 
-    // Gentle enlargement of the existing modal (no stacking fights)
+    // Gentle size increase ONLY after base show
     if (this.#container && this.#container.parentNode) {
       const modal = this.#container.parentNode;
-      modal.style.cssText = `
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 90vw !important;
-        height: 80vh !important;
+      modal.style.cssText += `
+        width: 92vw !important;
+        height: 82vh !important;
         max-width: none !important;
         border-radius: 12px !important;
         background: #111827 !important;
-        z-index: 99999 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        overflow: hidden !important;
-        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
       `;
+      console.log('🔵 [SnapshotView] modal enlarged safely');
     }
 
-    // Render chart AFTER modal is shown
+    // Render chart NOW that the modal is in the DOM and visible
     if (this.#periodsList && this.#periodsList.length > 0) {
       this.#renderChart();
+    } else {
+      console.warn('⚠️ No periodsList — showing empty modal');
     }
   }
 
@@ -88,7 +73,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
   #renderChart() {
     console.log('🔵 [SnapshotView] #renderChart START');
 
-    // Header
+    // Header (dark background friendly)
     const formattedDate = this.#snapshotDate.toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -96,12 +81,12 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     if (!header) {
       header = document.createElement('div');
       header.className = 'snapshot-header';
-      header.style.cssText = 'margin-bottom: 16px; font-weight: 600; font-size: 18px; color: #fff;';
+      header.style.cssText = 'margin-bottom:16px;font-weight:600;font-size:18px;color:#fff;';
       this.#container.appendChild(header);
     }
     header.innerHTML = `${formattedDate} – <span style="color:#10b981;">${this.#uptimePercent}% uptime</span>`;
 
-    // Canvas with safe height
+    // Canvas with safe fixed height that fits the enlarged modal
     let canvas = this.#container.querySelector('canvas');
     if (!canvas) {
       canvas = document.createElement('canvas');
@@ -120,13 +105,15 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         datasets: [{
           data: dataPoints,
           borderColor: 'transparent',
-          backgroundColor: (ctx) => (ctx.raw?.y ?? 1) > 0 
-            ? 'rgba(16, 185, 129, 0.85)' 
-            : 'rgba(239, 68, 68, 0.85)',
+          backgroundColor: (context) => {
+            const y = context.raw?.y ?? context.parsed?.y ?? 1;
+            return y > 0 ? 'rgba(16, 185, 129, 0.85)' : 'rgba(239, 68, 68, 0.85)';
+          },
           fill: 'origin',
           stepped: 'after',
           borderWidth: 0,
-          pointRadius: 0
+          pointRadius: 0,
+          tension: 0
         }]
       },
       options: {
@@ -136,40 +123,50 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         scales: {
           x: {
             type: 'category',
-            grid: { color: '#374151' },
+            grid: { color: '#374151', lineWidth: 1 },
             ticks: {
               maxRotation: 45,
               autoSkip: true,
+              autoSkipPadding: 15,
               font: { size: 11 },
               color: '#9ca3af',
-              callback: (val) => {
+              callback: function(val) {
                 if (typeof val !== 'number') return val;
                 const h = Math.floor(val / 60);
                 const m = val % 60;
                 const hh = h % 12 || 12;
                 const ampm = h < 12 ? 'AM' : 'PM';
-                return `${hh}:${m.toString().padStart(2,'0')} ${ampm}`;
+                return `${hh}:${m.toString().padStart(2, '0')} ${ampm}`;
               }
             }
           },
-          y: { min: -1.2, max: 1.2, display: false }
+          y: { min: -1.2, max: 1.2, display: false, grid: { display: false } }
         },
         plugins: {
           legend: { display: false },
           tooltip: {
+            enabled: true,
+            mode: 'nearest',
+            intersect: false,
             backgroundColor: '#111827',
             titleColor: '#fff',
             bodyColor: '#fff',
+            borderColor: '#374151',
+            borderWidth: 1,
+            padding: 12,
+            displayColors: false,
             callbacks: {
               title: () => '',
-              label: (ctx) => {
-                const idx = Math.min(Math.floor(ctx.dataIndex), this.#periodsList.length - 1);
-                const p = this.#periodsList[idx];
-                if (!p) return 'No data';
-                const status = p.connected ? '✅ Connected' : '❌ Disconnected';
-                const s = p.start.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
-                const e = p.end.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
-                return `${status} • ${s} – ${e} (${this.#formatDuration(p.duration)})`;
+              label: (context) => {
+                let periodIndex = Math.floor(context.dataIndex);
+                if (periodIndex >= this.#periodsList.length) periodIndex = this.#periodsList.length - 1;
+                const period = this.#periodsList[periodIndex];
+                if (!period) return 'No data';
+                const status = period.connected ? '✅ Connected' : '❌ Disconnected';
+                const startStr = period.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const endStr = period.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const durationStr = this.#formatDuration(period.duration);
+                return `${status} • ${startStr} – ${endStr} (${durationStr})`;
               }
             }
           }
@@ -178,9 +175,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     });
 
     this.#chart.update();
-    console.log('🔵 [SnapshotView] chart ready with', dataPoints.length, 'points');
+    console.log('🔵 [SnapshotView] chart instantiated successfully with', dataPoints.length, 'points');
   }
-
+  
   #buildDatasetsFromPeriods() {
     const dataPoints = [];
     if (!this.#periodsList.length) return { dataPoints };
