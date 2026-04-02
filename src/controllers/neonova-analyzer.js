@@ -59,6 +59,56 @@ static #computeLeadTime(normalized, requestedStart) {
 
     return normalized;
 }
+
+    /**
+     * Calculates the trailing boundary gap after all entries (plus any leading-gap injection)
+     * have been processed.
+     *
+     * - If final state is "up" → the gap is connected time; add it to sessionSeconds.
+     * - If final state is "down" → the gap is a disconnect duration. If that duration
+     *   is > 30 minutes (1800 seconds), record it in counters.longDisconnects exactly
+     *   like any other long outage (so the stability score's longOutagePenalty counts it).
+     *
+     * This is deliberately NOT done by injecting an entry (unlike the leading gap).
+     * We already know the final state, so a pure delta is sufficient and keeps the
+     * entries array clean.
+     *
+     * @param {Object} counters - counters object after #processAllEntries
+     * @param {Date} requestedEnd - required end of the analysis window
+     * @returns {void}
+     */
+    static #calculateEndTime(counters, requestedEnd) {
+        // Guard – requestedEnd is now mandatory across the class
+        if (!requestedEnd || !(requestedEnd instanceof Date) || isNaN(requestedEnd.getTime())) {
+            console.error('NeonovaAnalyzer: requestedEnd is required and must be a valid Date');
+            return;
+        }
+    
+        const endMs = requestedEnd.getTime();
+    
+        if (counters.currentState === 'up' && counters.lastDate) {
+            // Trailing gap = uptime
+            const durationSec = (endMs - counters.lastDate.getTime()) / 1000;
+            if (durationSec > 0) {
+                counters.sessionSeconds.push(durationSec);
+            }
+        } 
+        else if (counters.currentState === 'down' && counters.lastTransitionTime !== null) {
+            // Trailing gap = disconnect duration
+            const gapSec = (endMs - counters.lastTransitionTime) / 1000;
+    
+            if (gapSec > 0) {
+                // Record long outage if > 30 minutes (exactly as #processAllEntries does)
+                if (gapSec > 1800) {
+                    counters.longDisconnects.push({
+                        stopDate: new Date(counters.lastTransitionTime),
+                        startDate: new Date(endMs),           // virtual "end" of the window
+                        durationSec: gapSec
+                    });
+                }
+            }
+        }
+    }
     
     /**
      * PUBLIC API — SIGNATURE NOW EXTENDED (but fully backward-compatible)
@@ -69,23 +119,10 @@ static #computeLeadTime(normalized, requestedStart) {
     static computeMetrics(cleanedEntries, requestedStart = null, requestedEnd = null) {
         const normalized = this.#normalizeInput(cleanedEntries);
 
-        if (requestedStart && requestedEnd) {
-            const startMs = requestedStart.getTime();
-            const endMs   = requestedEnd.getTime();
-            const beforeCount = normalized.entries.length;
-            
-            normalized.entries = normalized.entries.filter(e => {
-                const ts = e.dateObj.getTime();
-                return ts >= startMs && ts <= endMs;
-            });
-        }
-
-        if (normalized.entries.length === 0) {
-            return {};
-        }
-
+        // New leading-gap handler (only thing that ever touches the entries array for boundaries)
+        const gapped = this.#computeLeadTime(normalized, requestedStart);
         const counters = this.#initializeCounters();
-        this.#processAllEntries(normalized.entries, counters);
+        this.#processAllEntries(gapped.entries, counters);
         this.#handleFinalSessionIfOpen(counters);
 
         // === NEW: Gap handling using the dates the user actually requested ===
@@ -130,47 +167,6 @@ static #computeLeadTime(normalized, requestedStart) {
             totalResultsCounted: normalized.totalProcessed || 0,
             ignoredAsDuplicates: normalized.ignored || 0
         });
-    }
-
-    static #determineLeadingConnectedTime(entries, requestedStart) {
-
-        if (!requestedStart || entries.length === 0) {
-            return { leadingConnectedSec: 0 };
-        }
-
-        const rangeStartMs = requestedStart.getTime();
-        const firstMs = entries[0].dateObj.getTime();
-
-        if (firstMs <= rangeStartMs) {
-            return { leadingConnectedSec: 0 };
-        }
-
-        const gapSec = (firstMs - rangeStartMs) / 1000;
-
-        const credit = entries[0].status === "Stop"
-            ? gapSec
-            : 0;
-
-        return { leadingConnectedSec: credit };
-    }
-
-    static #determineTrailingConnectedTime(entries, requestedEnd) {
-        if (!requestedEnd || entries.length === 0) {
-            return { trailingConnectedSec: 0 };
-        }
-
-        const rangeEndMs = requestedEnd.getTime();
-        const lastMs = entries[entries.length - 1].dateObj.getTime();
-
-        if (lastMs >= rangeEndMs) {
-            return { trailingConnectedSec: 0 };
-        }
-
-        const gapSec = (rangeEndMs - lastMs) / 1000;
-
-        const credit = entries[entries.length - 1].status === "Stop" ? 0 : gapSec;
-
-        return { trailingConnectedSec: credit };
     }
     
     static #getSessionBonus(metricMin) {
@@ -288,19 +284,6 @@ static #computeLeadTime(normalized, requestedStart) {
                 }
             }
         });
-    }
-
-    /**
-     * PRIVATE HELPER
-     * Handles the edge case where the last entry left us in "up" state (no final Stop).
-     * Calculates and pushes the final open session duration.
-     * @param {Object} counters - updated in place
-     */
-    static #handleFinalSessionIfOpen(counters) {
-        if (counters.currentState === "up" && counters.lastTransitionTime !== null && counters.lastDate) {
-            const finalDuration = (counters.lastDate.getTime() - counters.lastTransitionTime) / 1000;
-            if (finalDuration > 0) counters.sessionSeconds.push(finalDuration);
-        }
     }
 
     /**
@@ -617,10 +600,6 @@ static #computeLeadTime(normalized, requestedStart) {
             ignoredAsDuplicates: ignoredAsDuplicates || 0
         };
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // EXISTING HELPERS (unchanged — they were already clean)
-    // ─────────────────────────────────────────────────────────────
 
     static computeSessionBins(sessionSeconds) {
         const bins = [0, 0, 0, 0, 0];
