@@ -1,4 +1,65 @@
 class NeonovaAnalyzer {
+
+    /**
+ * Handles the leading boundary gap for a requested analysis window.
+ *
+ * When the first real log entry occurs *after* the requestedStart timestamp,
+ * we have no prior knowledge of the modem's state. This method injects a
+ * single leading entry at the exact requestedStart time with the *opposite*
+ * status of the first real entry. This bootstraps the state machine correctly
+ * so the very first real transition is processed as a normal Start → Stop
+ * or Stop → Start.
+ *
+ * The trailing boundary is deliberately NOT handled here — we know the final
+ * state from the last real entry, so it will be credited/debited as a simple
+ * time delta later in the pipeline (no entry is ever injected at the end).
+ *
+ * Side effects:
+ *   - Mutates normalized.entries in place (adds at most one object at index 0).
+ *   - Does NOT touch totalProcessed, ignored, or any other counters.
+ *   - The injected entry is indistinguishable from any real log entry.
+ *
+ * @param {Object} normalized - Result of #normalizeInput (must contain .entries array)
+ * @param {Date} requestedStart - Required start of the analysis window
+ * @returns {Object|null} The (possibly mutated) normalized object, or null on error
+ * @throws {never} Errors are logged to console and null is returned (consistent
+ *                 with NeonovaHTTPController / NeonovaCollector pattern)
+ */
+static #computeLeadTime(normalized, requestedStart) {
+    // Enforce mandatory date (we made this required across the class)
+    if (!requestedStart || !(requestedStart instanceof Date) || isNaN(requestedStart.getTime())) {
+        console.error('NeonovaAnalyzer: requestedStart is required and must be a valid Date');
+        return null;
+    }
+
+    // Early no-data case (standard Neonova error pattern)
+    if (!normalized?.entries || normalized.entries.length === 0) {
+        console.error('NeonovaAnalyzer: no log entries found in the requested window');
+        return null;
+    }
+
+    const firstReal = normalized.entries[0];
+
+    // Zero-delta case: first real entry already lands exactly on requestedStart
+    // → nothing to inject, state machine can proceed as-is
+    if (firstReal.dateObj.getTime() === requestedStart.getTime()) {
+        return normalized;
+    }
+
+    // Leading gap exists → inject opposite-status entry at the exact boundary
+    const oppositeStatus = firstReal.status === 'Start' ? 'Stop' : 'Start';
+
+    const leadEntry = {
+        dateObj: new Date(requestedStart.getTime()), // exact copy of boundary timestamp
+        status: oppositeStatus
+    };
+
+    // Insert at the very front (mutates in place)
+    normalized.entries.unshift(leadEntry);
+
+    return normalized;
+}
+    
     /**
      * PUBLIC API — SIGNATURE NOW EXTENDED (but fully backward-compatible)
      * @param {Array|Object} cleanedEntries
