@@ -123,7 +123,7 @@ static #computeLeadTime(normalized, requestedStart) {
         const gapped = this.#computeLeadTime(normalized, requestedStart);
         const counters = this.#initializeCounters();
         this.#processAllEntries(gapped.entries, counters);
-        this.#handleFinalSessionIfOpen(counters);
+        this.#calculateEndTime(counters, requestedEnd);
 
         // === NEW: Gap handling using the dates the user actually requested ===
         const leading = this.#determineLeadingConnectedTime(normalized.entries, requestedStart);
