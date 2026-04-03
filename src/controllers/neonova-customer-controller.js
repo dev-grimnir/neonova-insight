@@ -68,6 +68,19 @@ class NeonovaCustomerController {
         new NeonovaReportOrderController(username, friendlyName);
     }
 
+    open3DaySnapshot() {
+        const username = this.#model.radiusUsername;
+        const friendlyName = this.#model.friendlyName || username;
+
+        const endDate = new Date();                    // today
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 3);    // 3 days ago
+
+        console.log(`[Snapshot] Opening 3-day view for ${username}`);
+
+        new NeonovaSnapshotController(username, friendlyName, startDate, endDate);
+    }
+
     async updateFriendlyName(newName) {
         const trimmed = newName.trim();
         if (trimmed === '') {
