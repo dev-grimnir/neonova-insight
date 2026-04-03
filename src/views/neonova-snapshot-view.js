@@ -2,13 +2,16 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     constructor(controller, model) {
         super(controller);
         this.model = model;
-        this._hasShown = false;
-        this._snapshotChartInstance = null;
+        this.#hasShown = false;
+        this.#snapshotChartInstance = null;
     }
 
     show() {
-        if (this._hasShown) return;
-        this._hasShown = true;
+        console.log('=== NeonovaSnapshotView.show() START ===');
+        if (this.#hasShown) return;
+        this.#hasShown = true;
+
+        console.log('Creating modal with HTML length:', this.modalHTML ? this.modalHTML.length : 'no html var');
 
         console.log('NeonovaSnapshotView.show() called');
 
@@ -37,6 +40,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         `;
 
         super.createModal(modalHTML).then(() => {
+            console.log('createModal resolved successfully. this.modal =', this.modal ? 'exists' : 'MISSING');
+            console.log('Modal outerHTML snippet:', this.modal ? this.modal.outerHTML.substring(0, 300) : 'no modal');
             this.render();
             this.attachListeners();
         }).catch(err => console.error('Snapshot modal creation failed:', err));
@@ -48,6 +53,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
 
         content.innerHTML = this.generateSnapshotHTML();
 
+        const debugEl = content.querySelector('#debug-info');
+        if (debugEl) debugEl.textContent = `Events: ${this.model.events?.length || 0} | Start: ${this.model.startDate} | End: ${this.model.endDate}`;
+        
         if (!this.model.events || this.model.events.length < 2) {
             content.innerHTML += `<div class="text-center text-zinc-400 py-20 text-lg">No connection events found for this period.</div>`;
             return;
@@ -61,15 +69,16 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         const height = Math.max(620, 500 + days * 20); // scale a bit for longer periods
 
         return `
-            <div class="max-w-6xl mx-auto">
-                <h1 class="text-5xl font-bold text-white text-center tracking-tight mb-8">
-                    Connection Timeline – ${this.model.getDateRangeString()}
-                </h1>
-                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8" style="height: ${height}px;">
-                    <canvas id="snapshotChart" class="w-full h-full"></canvas>
+                <div class="max-w-6xl mx-auto">
+                    <h1 class="text-5xl font-bold text-white text-center tracking-tight mb-8">
+                        Connection Timeline – ${this.model.getDateRangeString()}
+                    </h1>
+                    <div id="chart-container" class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8" style="height: 620px;">
+                        <canvas id="snapshotChart" class="w-full h-full"></canvas>
+                    </div>
+                    <div id="debug-info" class="text-xs text-zinc-500 mt-4 text-center"></div>
                 </div>
-            </div>
-        `;
+            `;
     }
 
     initSnapshotChart() {
@@ -129,9 +138,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             chartData.unshift({ x: startTime, y: chartData[0].y });
         }
     
-        if (this._snapshotChartInstance) this._snapshotChartInstance.destroy();
+        if (this.#snapshotChartInstance) this.#snapshotChartInstance.destroy();
     
-        this._snapshotChartInstance = new Chart(canvas, {
+        this.#snapshotChartInstance = new Chart(canvas, {
             type: 'line',
             data: {
                 datasets: [
@@ -238,9 +247,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     }
 
     hide() {
-        if (this._snapshotChartInstance) {
-            this._snapshotChartInstance.destroy();
-            this._snapshotChartInstance = null;
+        if (this.#snapshotChartInstance) {
+            this.#snapshotChartInstance.destroy();
+            this.#snapshotChartInstance = null;
         }
         super.hide();
     }
