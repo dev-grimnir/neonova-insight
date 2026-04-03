@@ -10,6 +10,14 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
 
     show() {
         console.log('=== NeonovaSnapshotView.show() START ===');
+
+        super.createModal(modalHTML).then(() => {
+            console.log('createModal resolved successfully. this.modal =', this.modal ? 'exists' : 'MISSING');
+            console.log('Modal outerHTML snippet:', this.modal ? this.modal.outerHTML.substring(0, 300) : 'no modal');
+            this.render();
+            this.attachListeners();
+        }).catch(err => console.error('Snapshot modal creation failed:', err));
+        
         if (this.#hasShown) return;
         this.#hasShown = true;
 
@@ -40,13 +48,6 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                 </div>
             </div>
         `;
-
-        super.createModal(modalHTML).then(() => {
-            console.log('createModal resolved successfully. this.modal =', this.modal ? 'exists' : 'MISSING');
-            console.log('Modal outerHTML snippet:', this.modal ? this.modal.outerHTML.substring(0, 300) : 'no modal');
-            this.render();
-            this.attachListeners();
-        }).catch(err => console.error('Snapshot modal creation failed:', err));
     }
 
     render() {
