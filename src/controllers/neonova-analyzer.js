@@ -125,7 +125,7 @@ static #computeLeadTime(normalized, requestedStart) {
         this.#processAllEntries(gapped.entries, counters);
         this.#calculateEndTime(counters, requestedEnd);
 
-        const rawConnectedSec = counters.sessionSeconds.reduce((a, b) => a + b, 0) || 0;
+        const totalConnectedSec = counters.sessionSeconds.reduce((a, b) => a + b, 0) || 0;
         
         const uptimeMetrics = this.#computeUptimeMetrics(
             counters.sessionSeconds,
