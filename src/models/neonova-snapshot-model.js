@@ -6,6 +6,9 @@ class NeonovaSnapshotModel {
         this.endDate = endDate;       // Date object
         this.events = events || [];   // Array of processed connection events
         this.metrics = metrics || {}; // uptimePercent, totalSeconds, disconnectSeconds, longDisconnects, etc.
+
+        console.log("SnapshotModel - events = " + this.events);
+        
     }
 
     getDateRangeString() {
