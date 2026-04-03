@@ -599,10 +599,16 @@ static #computeLeadTime(normalized, requestedStart) {
         return { rolling7Day, rollingLabels };
     }
 
-    static getEntries(cleanedEntries, requestedStart, requestedEnd) {
-        const normalized = this.#normalizeInput(cleanedEntries);
+    static getEntries(cleanedEntries, requestedStart, requestedEnd = null) {
+        if (!requestedStart || !(requestedStart instanceof Date) || isNaN(requestedStart.getTime())) {
+            console.error('NeonovaAnalyzer.getEntries: requestedStart must be a valid Date');
+            return { entries: Array.isArray(cleanedEntries) ? cleanedEntries : [] };
+        }
+    
+        const normalized = this.#normalizeInput(cleanedEntries);   // or this.normalizeInput after removing #
         const gapped = this.#computeLeadTime(normalized, requestedStart);
-        return gapped;
+    
+        return gapped || { entries: normalized.entries || [] };
     }
 
     /**
