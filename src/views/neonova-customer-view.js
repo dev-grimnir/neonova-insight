@@ -115,16 +115,16 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 e.preventDefault();
                 this.#controller.launchReport();
             }
+
+            if (e.target.closest('span.inline-flex.items-center')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.#controller.open3DaySnapshot();
+                return;
+            }
         });
 
-        const statusBadge = this.#tr.querySelector('span.inline-flex.items-center');
-        if (statusBadge) {
-            statusBadge.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();           // prevent row click / edit mode
-                this.#controller.open3DaySnapshot();
-            });
-        }
+
 
         // Commit on outside click
         const handleOutside = (e) => {
