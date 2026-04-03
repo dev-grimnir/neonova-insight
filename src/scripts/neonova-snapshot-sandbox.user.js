@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovaSubscriber - Snapshot
 // @namespace    http://tampermonkey.net/
-// @version      1.7
+// @version      2.0
 // @description  Real-time customer modem connection dashboard (separate script)
 // @author       dev-grimnir
 // @match        https://admin.neonova.net/*
@@ -29,7 +29,7 @@
     }
 
     (async () => {
-        const snapshot = new NeonovaSnapshotController(lucy99, linda, new Date(2026, 3, 1), new Date(2026, 4, 1));  
+        const snapshot = new NeonovaSnapshotController("lucy99", "linda", new Date(2026, 3, 1), new Date(2026, 4, 1));  
     })();
 })();
 
