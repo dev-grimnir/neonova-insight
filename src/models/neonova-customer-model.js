@@ -1,5 +1,6 @@
 class NeonovaCustomerModel {
     constructor(radiusUsername, friendlyName = '', initialState = {}) {
+        const state = initialState || {};
         this.radiusUsername = radiusUsername.trim();
         this.friendlyName = (friendlyName.trim() || radiusUsername.trim());
         this.status = initialState.status || 'Connecting...';
