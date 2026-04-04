@@ -96,10 +96,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         console.log('initSnapshotChart called — events count:', this.model.events ? this.model.events.length : 0);
     
         const canvas = document.getElementById('snapshotChart');
-        if (!canvas) {
-            console.error('Snapshot canvas #snapshotChart not found!');
-            return;
-        }
+        if (!canvas) return;
     
         if (!this.model.events || this.model.events.length < 2) return;
     
@@ -110,7 +107,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         const startTime = this.model.startDate.getTime();
         const endTime   = this.model.endDate.getTime() + 86399999; // end of last day
     
-        // === Build stepped periods (exactly like daily view) ===
+        // Build clean stepped periods (identical logic to the working daily view)
         const rawPeriods = [];
         let i = 0;
         while (i < sortedEvents.length) {
@@ -127,7 +124,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             i = j;
         }
     
-        // Force full coverage from startDate to endDate
+        // Force full range coverage (this eliminates the diagonal)
         if (rawPeriods.length > 0) {
             rawPeriods.unshift({ x: startTime, y: rawPeriods[0].y });
             rawPeriods.push({ x: endTime, y: rawPeriods[rawPeriods.length - 1].y });
@@ -174,9 +171,16 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                         enabled: true,
                         intersect: false,
                         mode: 'index',
+                        **title**: (tooltipItems) => {
+                            if (!tooltipItems.length) return '';
+                            return new Date(tooltipItems[0].parsed.x).toLocaleString([], {
+                                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                            });
+                        },
                         callbacks: {
                             label: (context) => {
                                 if (context.parsed.y === 0) return '';
+    
                                 const isConnected = context.parsed.y > 0;
                                 const currentX = context.parsed.x;
                                 const datasetData = context.dataset.data;
@@ -189,12 +193,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                                     }
                                 }
     
-                                const startStr = new Date(startX).toLocaleString([], { 
-                                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' 
-                                });
-                                const endStr = new Date(currentX).toLocaleString([], { 
-                                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' 
-                                });
+                                const startStr = new Date(startX).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                                const endStr   = new Date(currentX).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     
                                 const durMs = currentX - startX;
                                 const hours = Math.floor(durMs / 3600000);
@@ -215,10 +215,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                         ticks: {
                             color: '#64748b',
                             maxTicksLimit: 5,
-                            callback: (v) => new Date(v).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric' 
-                            })
+                            callback: (v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                         }
                     },
                     y: {
@@ -235,14 +232,11 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             }
         });
     
-        // Force Chart.js to redraw with correct dimensions
         setTimeout(() => {
             if (this._snapshotChartInstance) this._snapshotChartInstance.resize();
         }, 100);
-    
-        console.log('Chart rendered with range:', new Date(startTime), '→', new Date(endTime));
     }
-
+    
     attachListeners() {
         const closeBtn = this.modal.querySelector('#close-snapshot-btn');
         const modalEl  = this.modal.querySelector('#snapshot-modal');
