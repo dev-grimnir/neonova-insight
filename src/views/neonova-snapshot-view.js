@@ -93,15 +93,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     }
 
     initSnapshotChart() {
-        console.log('initSnapshotChart called — events count:', this.model.events ? this.model.events.length : 0);
-    
         const canvas = document.getElementById('snapshotChart');
-        if (!canvas) {
-            console.error('Snapshot canvas #snapshotChart not found!');
-            return;
-        }
-    
-        if (!this.model.events || this.model.events.length < 2) return;
+        if (!canvas) return;
     
         const sortedEvents = [...this.model.events].sort((a, b) => 
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
@@ -110,7 +103,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         const startTime = this.model.startDate.getTime();
         const endTime   = this.model.endDate.getTime() + 86399999;
     
-        // Build periods + duplicate every status change point (this kills the diagonal)
+        // Force flat horizontal steps (this is what kills the diagonal)
         const rawPeriods = [];
         let i = 0;
         while (i < sortedEvents.length) {
@@ -123,19 +116,14 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                 j++;
             }
     
-            // Duplicate the point so Chart.js draws a perfectly flat step
             rawPeriods.push({ x: startMs, y: isConnected ? 1 : -1 });
-    
             i = j;
         }
     
-        // Force full range coverage
         if (rawPeriods.length > 0) {
             rawPeriods.unshift({ x: startTime, y: rawPeriods[0].y });
             rawPeriods.push({ x: endTime, y: rawPeriods[rawPeriods.length - 1].y });
         }
-    
-        const chartData = rawPeriods;
     
         if (this._snapshotChartInstance) this._snapshotChartInstance.destroy();
     
@@ -145,7 +133,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                 datasets: [
                     {
                         label: 'Connected',
-                        data: chartData.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
+                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
                         borderColor: '#10b981',
                         backgroundColor: '#10b98188',
                         borderWidth: 0,
@@ -156,7 +144,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                     },
                     {
                         label: 'Disconnected',
-                        data: chartData.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
+                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
                         borderColor: '#ef4444',
                         backgroundColor: '#ef444488',
                         borderWidth: 0,
@@ -177,69 +165,38 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                         intersect: false,
                         mode: 'index',
                         callbacks: {
-                            title: (tooltipItems) => {
-                                if (!tooltipItems.length) return '';
-                                return new Date(tooltipItems[0].parsed.x).toLocaleString([], {
-                                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-                                });
-                            },
-                            label: (context) => {
-                                if (context.parsed.y === 0) return '';
-    
-                                const isConnected = context.parsed.y > 0;
-                                const currentX = context.parsed.x;
-                                const datasetData = context.dataset.data;
-    
+                            title: (items) => items.length ? new Date(items[0].parsed.x).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '',
+                            label: (ctx) => {
+                                if (ctx.parsed.y === 0) return '';
+                                const isConnected = ctx.parsed.y > 0;
+                                const currentX = ctx.parsed.x;
                                 let startX = startTime;
-                                for (let idx = 0; idx < datasetData.length; idx++) {
-                                    if (datasetData[idx].x >= currentX) {
-                                        if (idx > 0) startX = datasetData[idx - 1].x;
+                                for (let idx = 0; idx < ctx.dataset.data.length; idx++) {
+                                    if (ctx.dataset.data[idx].x >= currentX) {
+                                        if (idx > 0) startX = ctx.dataset.data[idx - 1].x;
                                         break;
                                     }
                                 }
-    
-                                const startStr = new Date(startX).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-                                const endStr   = new Date(currentX).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    
+                                const startStr = new Date(startX).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+                                const endStr   = new Date(currentX).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
                                 const durMs = currentX - startX;
                                 const hours = Math.floor(durMs / 3600000);
                                 const mins = Math.floor((durMs % 3600000) / 60000);
                                 const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-    
                                 return `${isConnected ? 'Connected' : 'Disconnected'} — ${startStr} to ${endStr} (${durationStr})`;
                             }
                         }
                     }
                 },
                 scales: {
-                    x: {
-                        type: 'linear',
-                        min: startTime,
-                        max: endTime,
-                        grid: { color: '#27272a', lineWidth: 1 },
-                        ticks: {
-                            color: '#64748b',
-                            maxTicksLimit: 5,
-                            callback: (v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        }
-                    },
-                    y: {
-                        min: -1.2,
-                        max: 1.2,
-                        ticks: { display: false },
-                        grid: {
-                            color: (ctx) => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
-                            lineWidth: (ctx) => ctx.tick.value === 0 ? 4 : 1.5
-                        }
-                    }
+                    x: { type: 'linear', min: startTime, max: endTime, grid: { color: '#27272a' }, ticks: { color: '#64748b', maxTicksLimit: 5, callback: v => new Date(v).toLocaleDateString('en-US', {month:'short', day:'numeric'}) }},
+                    y: { min: -1.2, max: 1.2, ticks: { display: false }, grid: { color: ctx => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a', lineWidth: ctx => ctx.tick.value === 0 ? 4 : 1.5 }}
                 },
                 layout: { padding: { right: 40, left: 20, top: 30, bottom: 20 } }
             }
         });
     
-        setTimeout(() => {
-            if (this._snapshotChartInstance) this._snapshotChartInstance.resize();
-        }, 100);
+        setTimeout(() => this._snapshotChartInstance?.resize(), 100);
     }
     
     attachListeners() {
