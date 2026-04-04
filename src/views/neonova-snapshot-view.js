@@ -105,7 +105,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         
         let z = 0;
         while (z < sortedEvents.length) {
-            const isConnected = (sortedEvents[z].status === 'Start' || sortedEvents[i].status === 'connected');
+            const isConnected = (sortedEvents[z].status === 'Start' || sortedEvents[z].status === 'connected');
             const startMs = sortedEvents[z].dateObj.getTime();
         
             let j = z + 1;
