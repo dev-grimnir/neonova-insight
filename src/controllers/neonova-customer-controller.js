@@ -2,8 +2,7 @@
 
 class NeonovaCustomerController {
     #model;  
-
-    constructor(radiusUsername, friendlyName = null, dashboardController) {
+    constructor(radiusUsername, friendlyName = null, dashboardController, initialState = null) {
         if (typeof radiusUsername !== 'string' || !radiusUsername.trim()) {
             throw new Error('radiusUsername must be a non-empty string');
         }
