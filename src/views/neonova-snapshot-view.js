@@ -93,6 +93,36 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     }
 
     initSnapshotChart() {
+        // Build periods FIRST — single source of truth for tooltip
+        const periods = [];
+        let i = 0;
+        while (i < sortedEvents.length) {
+            const isConnected = (sortedEvents[i].status === 'Start' || sortedEvents[i].status === 'connected');
+            const startMs = sortedEvents[i].dateObj.getTime();
+        
+            let j = i + 1;
+            while (j < sortedEvents.length &&
+                   (sortedEvents[j].status === 'Start' || sortedEvents[j].status === 'connected') === isConnected) {
+                j++;
+            }
+        
+            const endMs = j < sortedEvents.length
+                ? sortedEvents[j].dateObj.getTime() - 1
+                : endTime;
+        
+            periods.push({ startMs, endMs, isConnected });
+            i = j;
+        }
+        this._periods = periods;
+        
+        // Build chart points from periods (two points each = no diagonals)
+        const rawPeriods = [];
+        periods.forEach(p => {
+            const y = p.isConnected ? 1 : -1;
+            rawPeriods.push({ x: p.startMs, y });
+            rawPeriods.push({ x: p.endMs,   y });
+        });
+        
         const canvas = document.getElementById('snapshotChart');
         if (!canvas) return;
     
@@ -161,33 +191,43 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        intersect: false,
-                        mode: 'index',
-                        callbacks: {
-                            title: (items) => items.length ? new Date(items[0].parsed.x).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '',
-                            label: (ctx) => {
-                                if (ctx.parsed.y === 0) return '';
-                                const isConnected = ctx.parsed.y > 0;
-                                const currentX = ctx.parsed.x;
-                                let startX = startTime;
-                                for (let idx = 0; idx < ctx.dataset.data.length; idx++) {
-                                    if (ctx.dataset.data[idx].x >= currentX) {
-                                        if (idx > 0) startX = ctx.dataset.data[idx - 1].x;
-                                        break;
-                                    }
-                                }
-                                const startStr = new Date(startX).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-                                const endStr   = new Date(currentX).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-                                const durMs = currentX - startX;
-                                const hours = Math.floor(durMs / 3600000);
-                                const mins = Math.floor((durMs % 3600000) / 60000);
-                                const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-                                return `${isConnected ? 'Connected' : 'Disconnected'} — ${startStr} to ${endStr} (${durationStr})`;
+                        tooltip: {
+                            enabled: true,
+                            intersect: false,
+                            mode: 'index',
+                            callbacks: {
+                                title: (items) => {
+                                    if (!items.length) return '';
+                                    return new Date(items[0].parsed.x).toLocaleString([], {
+                                        month: 'short', day: 'numeric',
+                                        hour: 'numeric', minute: '2-digit'
+                                    });
+                                },
+                                label: (ctx) => {
+                                    // Only process one dataset — skip the zero-value hit entirely
+                                    if (ctx.parsed.y === 0) return null;
+                        
+                                    const currentX = ctx.parsed.x;
+                                    const period = this._periods.find(p => currentX >= p.startMs && currentX <= p.endMs);
+                                    if (!period) return '';
+                        
+                                    const fmt = (ms) => new Date(ms).toLocaleString([], {
+                                        month: 'short', day: 'numeric',
+                                        hour: 'numeric', minute: '2-digit'
+                                    });
+                        
+                                    const durMs  = period.endMs - period.startMs;
+                                    const hours  = Math.floor(durMs / 3600000);
+                                    const mins   = Math.floor((durMs % 3600000) / 60000);
+                                    const durStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                        
+                                    const label = period.isConnected ? 'Connected' : 'Disconnected';
+                                    return `${label} — ${fmt(period.startMs)} to ${fmt(period.endMs)} (${durStr})`;
+                                },
+                                // Filter out null returns (the zero-value dataset hit)
+                                afterLabel: () => null
                             }
                         }
-                    }
                 },
                 scales: {
                     x: { type: 'linear', min: startTime, max: endTime, grid: { color: '#27272a' }, ticks: { color: '#64748b', maxTicksLimit: 5, callback: v => new Date(v).toLocaleDateString('en-US', {month:'short', day:'numeric'}) }},
