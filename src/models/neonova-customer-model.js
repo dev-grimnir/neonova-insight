@@ -54,6 +54,9 @@ class NeonovaCustomerModel {
             status: this.status,
             durationSec: this.durationSec,
             lastUpdate: this.lastUpdate
+            lastEventTime: this.lastEventTime instanceof Date 
+                ? this.lastEventTime.toISOString() 
+                : (this.lastEventTime || null)
         };
     }
 }
