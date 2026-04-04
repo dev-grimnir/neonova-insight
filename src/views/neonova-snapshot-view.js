@@ -8,7 +8,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         this.#model = model;
         this.#hasShown = false;
         this.#snapshotChartInstance = null;
-        #history = [];  // stack of previous models for back navigation
+        this.#history = [];  // stack of previous models for back navigation
     }
 
     show() {
