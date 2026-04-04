@@ -27,14 +27,8 @@ class NeonovaSnapshotController {
             const cleanResult = NeonovaCollector.cleanEntries(rawEntries || []);
             const cleaned = cleanResult.cleanedEntries || [];
 
-            // 3. Analyze with NeonovaAnalyzer (full metrics + events)
-            const analyzerResult = NeonovaAnalyzer.computeMetrics(cleaned, this.startDate, this.endDate);
-            // or if you prefer only getEntries + manual metrics:
-            // const entriesResult = NeonovaAnalyzer.getEntries(cleaned, this.startDate, this.endDate);
-            // then process further...
-
-            const events = analyzerResult?.entries || cleaned;
-            const metrics = analyzerResult?.metrics || {};
+            const metrics = NeonovaAnalyzer.computeMetrics(cleaned, this.startDate, this.endDate);
+            const events = metrics?.entries || cleaned;
 
             // 4. Create model (pure data)
             this.model = new NeonovaSnapshotModel(

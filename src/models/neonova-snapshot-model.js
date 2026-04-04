@@ -6,6 +6,9 @@ class NeonovaSnapshotModel {
         this.endDate = endDate;       // Date object
         this.events = events || [];   // Array of processed connection events
         this.metrics = metrics || {}; // uptimePercent, totalSeconds, disconnectSeconds, longDisconnects, etc.
+
+        console.log("SnapshotModel - events = " + JSON.stringify(this.events));
+        
     }
 
     getDateRangeString() {
@@ -25,8 +28,6 @@ class NeonovaSnapshotModel {
     }
 
     getUptimePercent() {
-        return this.metrics.uptimePercent != null 
-            ? Math.round(this.metrics.uptimePercent * 100) / 100 
-            : 0;
+        return this.metrics.percentConnected
     }
 }

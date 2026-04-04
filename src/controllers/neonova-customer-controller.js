@@ -2,13 +2,12 @@
 
 class NeonovaCustomerController {
     #model;  
-
-    constructor(radiusUsername, friendlyName = null, dashboardController) {
+    constructor(radiusUsername, friendlyName = null, dashboardController, initialState = null) {
         if (typeof radiusUsername !== 'string' || !radiusUsername.trim()) {
             throw new Error('radiusUsername must be a non-empty string');
         }
-        this.#model = new NeonovaCustomerModel(radiusUsername.trim(), friendlyName);
         this.dashboardController = dashboardController;
+        this.#model = new NeonovaCustomerModel(radiusUsername.trim(), friendlyName, initialState);
         this.view = new NeonovaCustomerView(this);
     }
 
@@ -41,12 +40,17 @@ class NeonovaCustomerController {
 
     // Rehydrate from stored JSON
     static fromJSON(json, dashboardController) {
-        const ctrl = new NeonovaCustomerController(json.radiusUsername, json.friendlyName, dashboardController);
-        ctrl.#model.status = json.status || 'Connecting...';
-        ctrl.#model.durationSec = json.durationSec || 0;
-        ctrl.#model.lastEventTime = json.lastEventTime ? new Date(json.lastEventTime) : null;
-        ctrl.#model.lastUpdate = json.lastUpdate || new Date().toLocaleString();
-        ctrl.view.update();  // refresh row with loaded data
+        const ctrl = new NeonovaCustomerController(
+            json.radiusUsername,
+            json.friendlyName,
+            dashboardController,
+            {   
+                status: json.status || 'Connecting...',
+                durationSec: json.durationSec ?? 0,
+                lastUpdate: json.lastUpdate,
+                lastEventTime: json.lastEventTime
+            }
+        );
         return ctrl;
     }
 
@@ -66,6 +70,20 @@ class NeonovaCustomerController {
         const friendlyName = this.#model.friendlyName || username; 
         console.log('[launchReport] Starting for:', username, friendlyName);
         new NeonovaReportOrderController(username, friendlyName);
+    }
+
+    open3DaySnapshot() {
+        const username = this.#model.radiusUsername;
+        const friendlyName = this.#model.friendlyName || username;
+
+        const endDate = new Date();                    // today
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 3);    // 3 days ago
+        startDate.setHours(0, 0, 0, 0);
+
+        console.log(`[Snapshot] Opening 3-day view for ${username}`);
+
+        new NeonovaSnapshotController(username, friendlyName, startDate, endDate);
     }
 
     async updateFriendlyName(newName) {

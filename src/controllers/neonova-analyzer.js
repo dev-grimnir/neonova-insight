@@ -137,6 +137,66 @@ static #computeLeadTime(normalized, requestedStart) {
             }
         }
     }
+
+    static getEntries(cleanedEntries, requestedStart, requestedEnd) {
+        const normalized = this.#normalizeInput(cleanedEntries);
+        const gapped = this.#computeLeadTime(normalized, requestedStart);
+        return gapped;
+    }
+    
+    /**
+     * PUBLIC API — SIGNATURE NOW EXTENDED (but fully backward-compatible)
+     * @param {Array|Object} cleanedEntries
+     * @param {Date|null} requestedStart - optional, from the date picker
+     * @param {Date|null} requestedEnd   - optional, from the date picker
+     */
+    static computeMetrics(cleanedEntries, requestedStart = null, requestedEnd = null) {
+        const normalized = this.#normalizeInput(cleanedEntries);
+
+        // New leading-gap handler (only thing that ever touches the entries array for boundaries)
+        const gapped = this.#computeLeadTime(normalized, requestedStart);
+        const counters = this.#initializeCounters();
+        this.#processAllEntries(gapped.entries, counters);
+        this.#calculateEndTime(counters, requestedEnd);
+
+        const totalConnectedSec = counters.sessionSeconds.reduce((a, b) => a + b, 0) || 0;
+        
+        const uptimeMetrics = this.#computeUptimeMetrics(
+            counters.sessionSeconds,
+            counters.firstDate,
+            counters.lastDate,
+            requestedStart,
+            requestedEnd,
+            totalConnectedSec
+        );
+
+        const peakMetrics = this.#computePeakMetrics(counters);
+        const timeSinceLast = this.#computeTimeSinceLast(counters.lastDisconnectDate);
+        const dailyAverages = this.#computeDailyAverages(counters.dailyCount);
+        const sessionMetrics = this.#computeSessionMetrics(counters.sessionSeconds);
+        const reconnectMetrics = this.#computeReconnectMetrics(counters.reconnectSeconds);
+        const stabilityScore = this.#computeStabilityScore({
+            uptimeMetrics,
+            sessionMetrics,
+            reconnectMetrics,
+            counters,
+            dailyAverages
+        });
+
+        return this.#assembleReturnObject({
+            peakMetrics,
+            timeSinceLast,
+            dailyAverages,
+            uptimeMetrics,
+            sessionMetrics,
+            reconnectMetrics,
+            stabilityScore,
+            counters,
+            entriesLength: normalized.entries.length,
+            totalResultsCounted: normalized.totalProcessed || 0,
+            ignoredAsDuplicates: normalized.ignored || 0
+        });
+    }
     
     static #getSessionBonus(metricMin) {
         const metricHours = parseFloat(metricMin) / 60 || 0;

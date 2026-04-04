@@ -83,7 +83,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
             </td>
             <td class="px-2 py-1 text-sm text-gray-300">${durationStr}</td>
             <td class="px-2 py-1 text-right whitespace-nowrap">
-                <button class="remove-btn text-red-400 hover:text-red-300 text-lg font-bold px-1.5" title="Remove customer">
+                <button class="remove-btn text-red-400 hover:text-red-300 text-lg font-bold px-1.5" title="Remove Customer">
                     ×
                 </button>
                 <button class="report-btn text-emerald-400 hover:text-emerald-300 text-xl px-1.5 ml-2" title="Generate Report">
@@ -115,7 +115,16 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 e.preventDefault();
                 this.#controller.launchReport();
             }
+
+            if (e.target.closest('span.inline-flex.items-center')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.#controller.open3DaySnapshot();
+                return;
+            }
         });
+
+
 
         // Commit on outside click
         const handleOutside = (e) => {

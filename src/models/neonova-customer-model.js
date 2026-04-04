@@ -1,12 +1,13 @@
 class NeonovaCustomerModel {
-    constructor(radiusUsername, friendlyName = '') {
-        this.radiusUsername = radiusUsername.trim();
-        this.friendlyName = (friendlyName.trim() || radiusUsername.trim());
-        this.status = 'Connecting...';               
-        this.durationSec = 0;                  
-        this.lastUpdate = new Date().toLocaleString();
-        this.lastEventTime = null
-    }
+constructor(radiusUsername, friendlyName = '', initialState = null) {
+    const state = initialState || {};
+    this.radiusUsername = radiusUsername.trim();
+    this.friendlyName = (friendlyName.trim() || radiusUsername.trim());
+    this.status = state.status || 'Connecting...';
+    this.durationSec = state.durationSec ?? 0;
+    this.lastUpdate = state.lastUpdate || new Date().toLocaleString();
+    this.lastEventTime = state.lastEventTime ? new Date(state.lastEventTime) : null;
+}
 
     getDurationStr() {
       const seconds = this.durationSec || 0;
@@ -45,15 +46,16 @@ class NeonovaCustomerModel {
         this.lastUpdate = new Date().toLocaleString();
     }
 
-
-
     toJSON() {
         return {
             radiusUsername: this.radiusUsername,
             friendlyName: this.friendlyName,
             status: this.status,
             durationSec: this.durationSec,
-            lastUpdate: this.lastUpdate
+            lastUpdate: this.lastUpdate,
+            lastEventTime: this.lastEventTime instanceof Date 
+                ? this.lastEventTime.toISOString() 
+                : (this.lastEventTime || null)
         };
     }
 }

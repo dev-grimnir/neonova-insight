@@ -277,10 +277,10 @@ class NeonovaDashboardController {
      * Keeps the "protect empty" guard you already liked.
      */
     async save() {
-        const jsonStr = JSON.stringify(this.model.toJSON());
-    
         try {
-            const jsonStr = JSON.stringify(this.model.toJSON());
+            // Serialize from live controllers, not stale model.customers
+            const customers = Array.from(this.customerControllers.values()).map(ctrl => ctrl.toJSON());
+            const jsonStr = JSON.stringify({ customers });
             const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
             localStorage.setItem('novaDashboardCustomers', encrypted);
         } catch (e) {
