@@ -415,7 +415,7 @@ class NeonovaDashboardController {
 
             if (isNew) {
                 customer.update(status, durationSeconds);
-                customer.lastEventTime = eventMs;
+                customer.lastEventTime = new Date(eventMs);
             } else {
                 // No change — just keep incrementing duration
                 if (customer.lastEventTime !== null) {
