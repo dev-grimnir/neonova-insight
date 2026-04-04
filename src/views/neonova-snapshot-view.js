@@ -97,7 +97,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         );
     
         const startTime = this.model.startDate.getTime();
-        const endTime   = this.model.endDate.getTime() + 86399999;
+        const endTime   = this.model.endDate.getTime();
 
         // Build periods FIRST — single source of truth for tooltip
         const periods = [];
