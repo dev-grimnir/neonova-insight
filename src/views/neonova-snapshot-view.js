@@ -6,6 +6,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         this.model = model;
         this.#hasShown = false;
         this.#snapshotChartInstance = null;
+        #history = [];  // stack of previous models for back navigation
     }
 
     show() {
@@ -17,22 +18,22 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         const modalHTML = `
             <div id="snapshot-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[10001] opacity-0 transition-opacity duration-400">
                 <div class="bg-[#18181b] border border-[#27272a] rounded-3xl w-[1280px] max-w-[96vw] max-h-[96vh] overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-all duration-500">
-                    <!-- Header -->
                     <div class="px-8 py-6 border-b border-[#27272a] bg-[#09090b] flex-shrink-0 flex items-center justify-between">
-                        <div>
-                            <div class="text-emerald-400 text-xs font-mono tracking-widest">${this.model.friendlyName || 'Customer'} — Connection Timeline</div>
-                            <div class="text-3xl font-semibold text-white mt-1">${this.model.getDateRangeString()}</div>
-                            <div class="text-lg font-medium text-emerald-400 mt-1">
-                                Uptime: ${this.model.getUptimePercent()}%
+                        <div class="flex items-center gap-4">
+                            <button id="back-btn" class="hidden px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
+                                ← Back
+                            </button>
+                            <div>
+                                <div class="text-emerald-400 text-xs font-mono tracking-widest" id="snapshot-subtitle">${this.model.friendlyName || 'Customer'} — Connection Timeline</div>
+                                <div class="text-3xl font-semibold text-white mt-1" id="snapshot-daterange">${this.model.getDateRangeString()}</div>
+                                <div class="text-lg font-medium text-emerald-400 mt-1" id="snapshot-uptime">Uptime: ${this.model.getUptimePercent()}%</div>
                             </div>
                         </div>
                         <button id="close-snapshot-btn" class="px-6 py-2.5 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
                             ✕ Close
                         </button>
                     </div>
-                    
-                    <!-- Content -->
-                    <div id="snapshot-content" class="flex-1 overflow-y-auto p-8 bg-[#18181b]">
+                    <div id="snapshot-content" class="flex-1 overflow-y-auto p-8 bg-[#18181b] ...">
                     </div>
                 </div>
             </div>
@@ -58,6 +59,85 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         }).catch(err => {
             console.error('Snapshot modal creation failed:', err);
         });
+    }
+
+    async drillDown(dateStr) {
+        // Push current model onto history stack
+        this.#history.push(this.model);
+    
+        // Fetch single day data
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const startDate = new Date(year, month - 1, day);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(year, month - 1, day);
+        endDate.setHours(23, 59, 59, 999);
+    
+        // Show a loading state in the content area
+        const content = this.modal.querySelector('#snapshot-content');
+        if (content) content.innerHTML = `
+            <div class="flex items-center justify-center h-full gap-4">
+                <div class="w-8 h-8 rounded-full border-4 border-zinc-700 border-t-emerald-400 animate-spin"></div>
+                <span class="text-emerald-400 font-mono text-sm">Loading ${dateStr}...</span>
+            </div>
+        `;
+    
+        try {
+            const rawEntries = await NeonovaHTTPController.paginateReportLogs(
+                this.model.username,
+                startDate,
+                endDate,
+                0, 0, 23, 59
+            );
+    
+            const cleanResult = NeonovaCollector.cleanEntries(rawEntries || []);
+            const cleaned = cleanResult.cleanedEntries || [];
+            const metrics = NeonovaAnalyzer.computeMetrics(cleaned, startDate, endDate);
+            const events = metrics?.entries || cleaned;
+    
+            // Swap model to the single day
+            this.model = new NeonovaSnapshotModel(
+                this.model.username,
+                this.model.friendlyName,
+                startDate,
+                endDate,
+                events,
+                metrics
+            );
+    
+            this.#updateHeader();
+            this.render();
+            setTimeout(() => this.#initChart(), 150);
+    
+        } catch (err) {
+            console.error('Drill-down failed:', err);
+            // Pop history back since we failed
+            this.model = this.#history.pop();
+            this.#updateHeader();
+            this.render();
+            setTimeout(() => this.#initChart(), 150);
+        }
+    }
+
+    goBack() {
+        if (this.#history.length === 0) return;
+        this.model = this.#history.pop();
+        this.#updateHeader();
+        this.render();
+        setTimeout(() => this.#initChart(), 150);
+    }
+
+    #updateHeader() {
+        const subtitle = this.modal.querySelector('#snapshot-subtitle');
+        const daterange = this.modal.querySelector('#snapshot-daterange');
+        const uptime = this.modal.querySelector('#snapshot-uptime');
+        const backBtn = this.modal.querySelector('#back-btn');
+    
+        if (subtitle)  subtitle.textContent  = `${this.model.friendlyName || 'Customer'} — Connection Timeline`;
+        if (daterange) daterange.textContent = this.model.getDateRangeString();
+        if (uptime)    uptime.textContent    = `Uptime: ${this.model.getUptimePercent()}%`;
+    
+        // Show back button only when there's history to go back to
+        if (backBtn) backBtn.classList.toggle('hidden', this.#history.length === 0);
     }
 
     render() {
@@ -218,13 +298,48 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         });
     
         setTimeout(() => this.#snapshotChartInstance?.resize(), 100);
+
+        canvas.addEventListener('click', (e) => {
+            const chart = this.#chartInstance;
+            if (!chart) return;
+        
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+        
+            // Only respond to clicks in the bottom tick area
+            const chartArea = chart.chartArea;
+            if (y < chartArea.bottom) return;  // above the axis = chart body, ignore
+        
+            // Find which tick was clicked by mapping x to the nearest tick value
+            const xScale = chart.scales.x;
+            const clickedMs = xScale.getValueForPixel(x);
+        
+            // Snap to nearest day
+            const clickedDate = new Date(clickedMs);
+            const dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
+        
+            this.drillDown(dateStr);
+        });
+        
+        // Change cursor to pointer when hovering over tick area
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const chart = this.#chartInstance;
+            if (!chart) return;
+            canvas.style.cursor = y > chart.chartArea.bottom ? 'pointer' : 'default';
+        });
+        
     }
     
     attachListeners() {
         const closeBtn = this.modal.querySelector('#close-snapshot-btn');
+        const backBtn  = this.modal.querySelector('#back-btn');
         const modalEl  = this.modal.querySelector('#snapshot-modal');
-
+    
         closeBtn?.addEventListener('click', () => this.hide());
+        backBtn?.addEventListener('click',  () => this.goBack());
         modalEl?.addEventListener('click', e => {
             if (e.target === modalEl) this.hide();
         });
