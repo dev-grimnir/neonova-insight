@@ -105,18 +105,24 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     
         // Force flat horizontal steps (this is what kills the diagonal)
         const rawPeriods = [];
+        
         let i = 0;
         while (i < sortedEvents.length) {
             const isConnected = (sortedEvents[i].status === 'Start' || sortedEvents[i].status === 'connected');
             const startMs = sortedEvents[i].dateObj.getTime();
-    
+        
             let j = i + 1;
             while (j < sortedEvents.length && 
                    (sortedEvents[j].status === 'Start' || sortedEvents[j].status === 'connected') === isConnected) {
                 j++;
             }
-    
+        
+            const endMs = j < sortedEvents.length
+                ? sortedEvents[j].dateObj.getTime() - 1
+                : endTime;
+        
             rawPeriods.push({ x: startMs, y: isConnected ? 1 : -1 });
+            rawPeriods.push({ x: endMs,   y: isConnected ? 1 : -1 });
             i = j;
         }
     
