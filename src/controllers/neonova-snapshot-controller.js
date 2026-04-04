@@ -4,7 +4,7 @@ class NeonovaSnapshotController {
         this.friendlyName = friendlyName;
         this.startDate = startDate instanceof Date ? startDate : new Date(startDate);
         this.endDate   = endDate instanceof Date ? endDate : new Date(endDate);
-
+        this.spinnerView = new NeonovaSpinnerView(friendlyName);
         this.model = null;
         this.view = null;
 
@@ -12,6 +12,7 @@ class NeonovaSnapshotController {
     }
 
     async loadAndShow() {
+        this.spinnerView.show();
         try {
             console.log(`Loading snapshot for ${this.username} from ${this.startDate.toISOString()} to ${this.endDate.toISOString()}`);
 
@@ -39,12 +40,14 @@ class NeonovaSnapshotController {
                 events,
                 metrics
             );
-
+            
+            this.spinnerView.hide();
             // 5. Create and show view
             this.view = new NeonovaSnapshotView(this, this.model);
             this.view.show();
 
         } catch (err) {
+            this.spinnerView.hide();
             console.error('Failed to load snapshot:', err);
             alert('Could not load connection snapshot. Check console.');
         }
