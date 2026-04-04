@@ -254,7 +254,7 @@ class NeonovaDashboardController {
         try {
             const jsonStr = await NeonovaCryptoController.decryptData(data);
             const parsed = JSON.parse(jsonStr);
-    
+            console.log('[load] restoring customers:', JSON.stringify(parsed.customers));
             this.model.customers = parsed.customers || [];
     
             this.customerControllers.clear();
@@ -278,8 +278,8 @@ class NeonovaDashboardController {
      */
     async save() {
         try {
-            // Serialize from live controllers, not stale model.customers
             const customers = Array.from(this.customerControllers.values()).map(ctrl => ctrl.toJSON());
+            console.log('[save] serializing customers:', JSON.stringify(customers));
             const jsonStr = JSON.stringify({ customers });
             const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
             localStorage.setItem('novaDashboardCustomers', encrypted);
