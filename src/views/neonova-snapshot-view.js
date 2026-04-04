@@ -126,11 +126,6 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             i = j;
         }
     
-        if (rawPeriods.length > 0) {
-            rawPeriods.unshift({ x: startTime, y: rawPeriods[0].y });
-            rawPeriods.push({ x: endTime, y: rawPeriods[rawPeriods.length - 1].y });
-        }
-    
         if (this.#snapshotChartInstance) this.#snapshotChartInstance.destroy();
     
         this.#snapshotChartInstance = new Chart(canvas, {
