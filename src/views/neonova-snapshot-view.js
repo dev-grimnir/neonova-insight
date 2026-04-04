@@ -20,9 +20,9 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                     <!-- Header -->
                     <div class="px-8 py-6 border-b border-[#27272a] bg-[#09090b] flex-shrink-0 flex items-center justify-between">
                         <div>
-                            <div class="text-emerald-400 text-xs font-mono tracking-widest">${this.model.friendlyName || 'Customer'}</div>
+                            <div class="text-emerald-400 text-xs font-mono tracking-widest">${this.model.friendlyName || 'Customer'} — Connection Timeline</div>
                             <div class="text-3xl font-semibold text-white mt-1">${this.model.getDateRangeString()}</div>
-                            <div class="text-2xl font-medium text-emerald-400 mt-1">
+                            <div class="text-lg font-medium text-emerald-400 mt-1">
                                 Uptime: ${this.model.getUptimePercent()}%
                             </div>
                         </div>
@@ -79,12 +79,8 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
     generateSnapshotHTML() {
         const days = Math.ceil((this.model.endDate - this.model.startDate) / (1000 * 60 * 60 * 24));
         const height = Math.max(620, 500 + days * 20); // scale a bit for longer periods
-
         return `
             <div class="max-w-6xl mx-auto">
-                <h1 class="text-5xl font-bold text-white text-center tracking-tight mb-8">
-                    Connection Timeline – ${this.model.getDateRangeString()}
-                </h1>
                 <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-8" style="height: 620px; min-height: 620px;">
                     <canvas id="snapshotChart" class="w-full h-full"></canvas>
                 </div>
