@@ -57,7 +57,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             }
     
             setTimeout(() => {
-                this.initChart();
+                this.#initChart();
             }, 150);
     
         }).catch(err => {
