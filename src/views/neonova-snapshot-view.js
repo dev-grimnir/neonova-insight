@@ -95,7 +95,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             const cleanResult = NeonovaCollector.cleanEntries(rawEntries || []);
             const cleaned = cleanResult.cleanedEntries || [];
             const metrics = NeonovaAnalyzer.computeMetrics(cleaned, startDate, endDate);
-            const events = metrics?.entries || cleaned;
+            const events = cleaned;
     
             // Swap model to the single day
             this.#model = new NeonovaSnapshotModel(
@@ -268,7 +268,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                                 },
                                 label: (ctx) => {
                                     // Only process one dataset — skip the zero-value hit entirely
-                                    if (ctx.parsed.y === 0) return null;
+                                    if (ctx.parsed.y === 0) return "";
                         
                                     const currentX = ctx.parsed.x;
                                     const period = this._periods.find(p => currentX >= p.startMs && currentX <= p.endMs);
@@ -287,8 +287,6 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                                     const label = period.isConnected ? 'Connected' : 'Disconnected';
                                     return `${label} — ${fmt(period.startMs)} to ${fmt(period.endMs)} (${durStr})`;
                                 },
-                                // Filter out null returns (the zero-value dataset hit)
-                                afterLabel: () => null
                             }
                         }
                 },
@@ -312,7 +310,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         
             // Only respond to clicks in the bottom tick area
             const chartArea = chart.chartArea;
-            if (y < chartArea.bottom) return;  // above the axis = chart body, ignore
+            if (y < chartArea.bottom - 10) return;  // above the axis = chart body, ignore
         
             // Find which tick was clicked by mapping x to the nearest tick value
             const xScale = chart.scales.x;
