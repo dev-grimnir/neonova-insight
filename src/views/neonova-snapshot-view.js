@@ -308,28 +308,23 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
         
-            // Only respond to clicks in the bottom tick area
-            const chartArea = chart.chartArea;
-            if (y < chartArea.bottom - 10) return;  // above the axis = chart body, ignore
+            // Let Chart.js tell us if the click is in the x-axis zone
+            const xAxis = chart.scales.x;
+            if (y < xAxis.top) return;  // above the x-axis area entirely — ignore
         
-            // Find which tick was clicked by mapping x to the nearest tick value
-            const xScale = chart.scales.x;
-            const clickedMs = xScale.getValueForPixel(x);
-        
-            // Snap to nearest day
+            const clickedMs = xAxis.getValueForPixel(x);
             const clickedDate = new Date(clickedMs);
             const dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
         
             this.drillDown(dateStr);
         });
         
-        // Change cursor to pointer when hovering over tick area
         canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const y = e.clientY - rect.top;
             const chart = this.#chartInstance;
             if (!chart) return;
-            canvas.style.cursor = y > chart.chartArea.bottom ? 'pointer' : 'default';
+            const rect = canvas.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            canvas.style.cursor = y > chart.scales.x.top ? 'pointer' : 'default';
         });
         
     }
