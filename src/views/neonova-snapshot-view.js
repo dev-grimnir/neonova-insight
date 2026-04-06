@@ -261,7 +261,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                     const clickedDate = new Date(clickedMs);
                     const dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
                     this.drillDown(dateStr);
-                }
+                },
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -311,25 +311,6 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         });
     
         setTimeout(() => this.#chartInstance?.resize(), 100);
-
-        canvas.addEventListener('click', (e) => {
-            const chart = this.#chartInstance;
-            if (!chart) return;
-        
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-        
-            // Let Chart.js tell us if the click is in the x-axis zone
-            const xAxis = chart.scales.x;
-            if (y < xAxis.top) return;  // above the x-axis area entirely — ignore
-        
-            const clickedMs = xAxis.getValueForPixel(x);
-            const clickedDate = new Date(clickedMs);
-            const dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
-        
-            this.drillDown(dateStr);
-        });
         
         canvas.addEventListener('mousemove', (e) => {
             const chart = this.#chartInstance;
