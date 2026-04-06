@@ -11,17 +11,6 @@ class NeonovaReportOrderController {
         // Controller creates its own view
         this.view = new NeonovaReportOrderView(this, this.username, this.friendlyName);
 
-        // Listen to the view's events
-        this.view.addEventListener('quickReportRequested', (event) => {
-            const { timeframe } = event.detail;
-            this.handleQuickReport(timeframe);
-        });
-
-        this.view.addEventListener('customReportRequested', (event) => {
-            const { startIso, endIso } = event.detail;
-            this.handleCustomReport(startIso, endIso);
-        });
-
         // Now show the view (controller manages view lifecycle)
         this.view.show();
     }
