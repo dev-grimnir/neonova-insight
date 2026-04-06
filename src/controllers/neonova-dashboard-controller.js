@@ -322,38 +322,6 @@ class NeonovaDashboardController {
         return !this.model.isPollingPaused && !!this.pollInterval;
     }
 
-    async getStatus(username) {
-        let url = NeonovaHTTPController.getSearchUrl(username);
-        const res = await fetch(url, { credentials: 'include', cache: 'no-cache' });
-        if (!res.ok) throw new Error('Fetch failed');
-
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const table = doc.querySelector('table[cellspacing="2"][cellpadding="2"]');
-        if (!table || table.rows.length < 2) return { status: 'Unknown', durationSec: 0 };
-
-        // Assume newest row first, status in cell 4 (adjust index if needed)
-        const latest = table.rows[1];
-        const statusText = latest.cells[4]?.textContent.trim().toLowerCase() || '';
-        const timestamp = latest.cells[0]?.textContent.trim() || '';
-
-        let status = 'Unknown';
-        let durationSec = 0;
-
-        if (statusText.includes('start') || statusText.includes('connect')) {
-            status = 'Connected';
-        } else if (statusText.includes('stop') || statusText.includes('disconnect')) {
-            status = 'Disconnected';
-            // Rough duration: from timestamp to now (improve with last Start if available)
-            const lastTime = new Date(timestamp).getTime();
-            durationSec = Math.round((Date.now() - lastTime) / 1000);
-        }
-
-        return { status, durationSec };
-    }
-
     async updateCustomerStatus(customer) {
         try {
             // Compute the "normal" sinceDate (last known event or last poll)
@@ -427,11 +395,5 @@ class NeonovaDashboardController {
             console.error('[updateCustomerStatus] error:', err);
             customer.update('Error', 0);
         }
-    }
-
-    getCurrentMonthStart() {
-        const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth(), 1);
     }   
-
 }
