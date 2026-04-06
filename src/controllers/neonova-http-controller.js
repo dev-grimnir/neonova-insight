@@ -197,59 +197,6 @@ class NeonovaHTTPController {
      * STATIC PUBLIC METHODS
      **************************************************************************/
 
-    static async safeFetch(url, options = {}) {
-        
-        const defaultOptions = {
-            credentials: 'include',
-            cache: 'no-cache',
-        };
-        const res = await fetch(url, { ...defaultOptions, ...options });
-        if (!res.ok) {
-            throw new Error(`Fetch failed: HTTP ${res.status}`);
-        }
-        return res;
-    }
-
-    static async submitSearch(username, overrides = {}) {
-        const formData = new URLSearchParams({
-            ...this.defaultFormData,
-            iuserid: username,
-            acctsearch: '2',
-            ...overrides
-        });
-
-        const now = new Date();
-        const currentYear = now.getFullYear().toString();
-        const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
-        const currentDay = '01';
-        if (!formData.has('syear')) formData.set('syear', currentYear);
-        if (!formData.has('smonth')) formData.set('smonth', currentMonth);
-        if (!formData.has('sday')) formData.set('sday', currentDay);
-
-        const res = await fetch(this.baseSearchUrl, {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formData.toString(),
-            referrer: `${this.baseSearchUrl}?acctsearch=1&userid=${encodeURIComponent(username)}`,
-        });
-
-        if (!res.ok) {
-            throw new Error(`Search failed: HTTP ${res.status}`);
-        }
-
-        const html = await res.text();
-        return new DOMParser().parseFromString(html, 'text/html');
-    }
-
-    static findNextPageLink(doc) {
-        return Array.from(doc.querySelectorAll('a'))
-            .find(a => a.textContent.trim().startsWith('NEXT @') && a.href && a.href.includes('index.php'));
-    }
-
     static getSearchUrl(username) {
         const now = new Date();
         const currentYear = now.getFullYear().toString();
