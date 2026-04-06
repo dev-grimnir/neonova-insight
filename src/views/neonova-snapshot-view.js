@@ -253,7 +253,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
                 onClick: (e, elements, chart) => {
                     const xAxis = chart.scales.x;
                     const y = e.native.clientY - canvas.getBoundingClientRect().top;
-                    
+                    console.log('[onClick] y:', y, 'xAxis.bottom:', xAxis.bottom, 'passes:', y >= xAxis.bottom);
                     // Fire if click is anywhere below the chart plot area
                     if (y < xAxis.bottom) return;
         
