@@ -1,6 +1,7 @@
 class NeonovaAddCustomerController {
-    constructor(dashboardController) {
-        this.dashboardController = dashboardController;
+    #tabController
+    constructor(tabController) {
+        this.#tabController = tabController;
         this.view = new NeonovaAddCustomerView(this);
     }
 
@@ -15,7 +16,7 @@ class NeonovaAddCustomerController {
         if (!un) return;
     
         try {
-            this.dashboardController.add(un, friendlyName);
+            this.#tabController.add(un, friendlyName);
         } catch (err) {
             this.view.showError("Failed to add customer: " + err.message);
             return;
