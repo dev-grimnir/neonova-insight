@@ -1,9 +1,11 @@
 class NeonovaDashboardView extends BaseNeonovaView {
+    #tabController;
     constructor(controller) {
         super();
         this.controller = controller;
         this.isMinimized = true;
         this.createElements();
+        this.#tabController = new NeonovaTabController(controller);
     }
 
     showToast(message, { type = 'error', duration = 5000 } = {}) {
