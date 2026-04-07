@@ -11,17 +11,42 @@ class NeonovaTabView extends BaseNeonovaView {
 
     render() {
         if (!this.container) return;
-
         const activeTab = this.tabController.getActiveTab();
         if (!activeTab) return;
-
-        this.container.innerHTML = '';
-
-        const table = this._buildTable(activeTab.customers);
-        this.container.appendChild(table);
+        this.clearRows();
+        const rows = activeTab.customers.map(ctrl => ctrl.getRowElement()).filter(Boolean);
+        const fragment = document.createDocumentFragment();
+        rows.forEach(row => fragment.appendChild(row));
+        this.container.appendChild(fragment);
     }
 
-    _buildTable(customers) {
+    clearRows() {
+        if (this.container) this.container.replaceChildren();
+    }
+
+    appendRow(trElement) {
+        if (this.container && trElement instanceof HTMLElement) {
+            this.container.appendChild(trElement);
+        }
+    }
+
+    setRows(rowElements) {
+        this.clearRows();
+        if (!Array.isArray(rowElements)) return;
+        const fragment = document.createDocumentFragment();
+        rowElements.forEach(tr => {
+            if (tr instanceof HTMLElement) fragment.appendChild(tr);
+        });
+        if (this.container) this.container.appendChild(fragment);
+    }
+
+    applyPrivacyBlur(enabled) {
+        if (this.container) {
+            this.container.classList.toggle('neonova-privacy-mode', enabled);
+        }
+    }
+    
+    #buildTable(customers) {
         const wrapper = document.createElement('div');
 
         if (!customers.length) {
