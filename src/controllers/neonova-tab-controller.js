@@ -111,54 +111,7 @@ class NeonovaTabController {
     
         return totalSeconds || 0;
     }
-
-    /**
-     * Loads customers from localStorage using the crypto controller.
-     * 
-     * Now 100% delegated — no more direct decrypt calls or global masterKey.
-     * If decryption fails, we clear only the customers data (never the master key).
-     */
-    async load() {
-        const data = localStorage.getItem('novaDashboardCustomers');
-        if (!data) {
-            return;
-        }
-    
-        try {
-            const jsonStr = await NeonovaCryptoController.decryptData(data);
-            const parsed = JSON.parse(jsonStr);
-            this.model.customers = parsed.customers || [];
-    
-            this.customerControllers.clear();
-            for (const json of this.model.customers) {
-                const ctrl = NeonovaCustomerController.fromJSON(json, this);
-                this.customerControllers.set(json.radiusUsername, ctrl);
-            }
-            
-        } catch (e) {
-            alert("Decryption failed. Clearing everything.");
-            localStorage.removeItem('novaDashboardCustomers');
-            return;
-        }
-    }
-
-    /**
-     * Saves customers to localStorage using the crypto controller.
-     * 
-     * Now fully delegated — no more global masterKey or direct encrypt calls.
-     * Keeps the "protect empty" guard you already liked.
-     */
-    async save() {
-        try {
-            const customers = Array.from(this.customerControllers.values()).map(ctrl => ctrl.toJSON());
-            const jsonStr = JSON.stringify({ customers });
-            const encrypted = await NeonovaCryptoController.encryptData(jsonStr);
-            localStorage.setItem('novaDashboardCustomers', encrypted);
-        } catch (e) {
-            console.error("[NeonovaDashboardController.save] Encryption failed", e);
-        }
-    }
-    
+        
     //methods for tab controller
     initDefaultTab() {
         const defaultTab = new NeonovaTabModel('All', true);
