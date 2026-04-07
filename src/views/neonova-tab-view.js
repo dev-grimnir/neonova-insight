@@ -1,5 +1,6 @@
 class NeonovaTabView extends BaseNeonovaView {
     constructor(tabController) {
+        super();
         this.tabController = tabController;
         this.container = null;
     }
