@@ -92,7 +92,6 @@ class NeonovaDashboardView extends BaseNeonovaView {
     }
 
     createElements() {
-        // ==================== SINGLE PANEL (morphs between bar ↔ full dashboard) ====================
         this.panel = document.createElement('div');
         this.panel.classList.add('neonova-dashboard');
         this.panel.style.cssText = `
@@ -117,16 +116,19 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 box-shadow 500ms cubic-bezier(0.32, 0.72, 0, 1);
         `;
         document.body.appendChild(this.panel);
-
-        // Inner structure (header + content)
+    
         this.panel.innerHTML = `
             <div class="flex flex-col h-full">
                 <div id="header-container"></div>
                 <div id="content-area" class="flex-1 overflow-hidden flex flex-col">
+    
+                    <!-- Tab bar -->
+                    <div id="tab-bar" class="flex items-center gap-2 px-6 pt-3 pb-0 border-b border-zinc-800 bg-zinc-900 shrink-0"></div>
+    
                     <!-- Card -->
                     <div class="flex-1 bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden flex flex-col">
-                        
-                        <!-- STATIC COLUMN HEADER (super compact) -->
+    
+                        <!-- Static column header -->
                         <div class="px-6 py-1 bg-zinc-900 border-b border-zinc-800">
                             <table class="w-full table-fixed">
                                 <colgroup>
@@ -147,8 +149,8 @@ class NeonovaDashboardView extends BaseNeonovaView {
                                 </thead>
                             </table>
                         </div>
-
-                        <!-- SCROLLABLE BODY ONLY -->
+    
+                        <!-- Scrollable body — owned by NeonovaTabView -->
                         <div class="flex-1 overflow-y-auto px-6 neonova-scroll">
                             <table class="w-full table-fixed">
                                 <colgroup>
@@ -165,22 +167,25 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 </div>
             </div>
         `;
-
+    
         this.headerContainer = this.panel.querySelector('#header-container');
         this.contentArea = this.panel.querySelector('#content-area');
-
-        // Create the ONE header element
+        this.tabBar = this.panel.querySelector('#tab-bar');
+    
         const temp = document.createElement('div');
         temp.innerHTML = this.getHeaderHTML();
         this.header = temp.firstElementChild;
         this.headerContainer.appendChild(this.header);
-
-        // Initial state = minimized (bar at bottom)
+    
+        // Mount the tab view into the customer table body
+        const tableBody = this.panel.querySelector('#customer-table-body');
+        this.controller.mountTabView(tableBody);
+    
+        // Initial state
         this.applyMinimizedStyles();
         this.contentArea.style.display = 'none';
         this.isMinimized = true;
-
-        // Scroll styles + minimized tooltip fix
+    
         if (!document.getElementById('neonova-scroll-style')) {
             const style = document.createElement('style');
             style.id = 'neonova-scroll-style';
@@ -190,20 +195,15 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     filter: blur(5px);
                     transition: filter 300ms ease;
                 }
-
-                /* Reveal only the hovered row's sensitive cells */
                 .neonova-privacy-mode tr:hover td:nth-child(1),
                 .neonova-privacy-mode tr:hover td:nth-child(2) {
                     filter: blur(0);
                 }
-                
                 .neonova-scroll::-webkit-scrollbar { width: 7px; }
                 .neonova-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
                 .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
                 .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
                 .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
-
-                /* Tooltip pops UP when panel is minimized */
                 .neonova-dashboard.minimized .poll-slider-tooltip {
                     top: auto !important;
                     bottom: 100% !important;
@@ -219,54 +219,146 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 .neonova-dashboard.minimized .poll-slider-tooltip:hover {
                     display: block !important;
                 }
+                .neonova-tab-btn {
+                    padding: 6px 18px;
+                    border-radius: 12px 12px 0 0;
+                    font-size: 13px;
+                    font-weight: 500;
+                    border: 1px solid transparent;
+                    border-bottom: none;
+                    cursor: pointer;
+                    transition: background 200ms, color 200ms;
+                    color: #a1a1aa;
+                    background: transparent;
+                    position: relative;
+                }
+                .neonova-tab-btn:hover {
+                    background: #27272a;
+                    color: #e4e4e7;
+                }
+                .neonova-tab-btn.active {
+                    background: #18181b;
+                    color: #34d399;
+                    border-color: #3f3f46;
+                }
+                .neonova-tab-btn .tab-close {
+                    margin-left: 8px;
+                    opacity: 0;
+                    font-size: 11px;
+                    color: #71717a;
+                    transition: opacity 150ms;
+                }
+                .neonova-tab-btn:hover .tab-close {
+                    opacity: 1;
+                }
+                .neonova-tab-add {
+                    padding: 4px 10px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    color: #52525b;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    transition: color 200ms;
+                    line-height: 1;
+                }
+                .neonova-tab-add:hover { color: #34d399; }
             `;
             document.head.appendChild(style);
         }
-
-        // Attach listeners ONCE (header never leaves the DOM)
+    
         this.attachHeaderListeners();
-
-        // Click anywhere on the bar (except buttons) to expand
+        this.renderTabBar();
+    
         this.panel.addEventListener('click', (e) => {
             if (this.isMinimized && !e.target.closest('button')) {
                 this.toggleMinimize();
             }
         });
-
+    
         this.escListener = (e) => {
             if (e.key !== 'Escape') return;
-
             if (!this.isMinimized && !this.controller.isModalActive()) {
                 e.preventDefault();
                 this.toggleMinimize();
             }
         };
         document.addEventListener('keydown', this.escListener, { capture: true });
-
+    
         this.outsideListener = (e) => {
-            // Quick DOM check: if any modal is still in the document, ignore
-            if (document.querySelector('.neonova-modal, #add-customer-modal, #passphrase-modal, [id*="modal"]')) {
-                return;
-            }
-        
-            // Or use the controller flag (both for redundancy)
-            if (this.controller.isModalActive() || this.isMinimized) {
-                return;
-            }
-        
-            // Ignore clicks inside our own panel
-            if (this.panel.contains(e.target)) {
-                return;
-            }
-        
-            // True outside click → minimize
+            if (document.querySelector('.neonova-modal, #add-customer-modal, #passphrase-modal, [id*="modal"]')) return;
+            if (this.controller.isModalActive() || this.isMinimized) return;
+            if (this.panel.contains(e.target)) return;
             this.toggleMinimize();
         };
         document.addEventListener('click', this.outsideListener);
-
+    
         this.render();
     }
 
+    renderTabBar() {
+        if (!this.tabBar) return;
+        this.tabBar.innerHTML = '';
+    
+        for (const tab of this.controller.getTabController().tabs) {
+            const btn = document.createElement('button');
+            btn.className = `neonova-tab-btn${tab.isActive ? ' active' : ''}`;
+            btn.dataset.label = tab.label;
+            btn.innerHTML = `
+                <span class="tab-label">${tab.label}</span>
+                <span class="tab-close" title="Close tab">&times;</span>
+            `;
+    
+            btn.querySelector('.tab-label').addEventListener('click', () => {
+                this.controller.getTabController().switchTab(tab.label);
+                this.renderTabBar();
+            });
+    
+            btn.querySelector('.tab-close').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const confirmed = confirm(`Close tab "${tab.label}"?`);
+                if (confirmed) {
+                    this.controller.getTabController().removeTab(tab.label);
+                    this.renderTabBar();
+                }
+            });
+    
+            // Double-click label to rename
+            btn.querySelector('.tab-label').addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const newLabel = prompt('Rename tab:', tab.label);
+                if (newLabel?.trim() && newLabel.trim() !== tab.label) {
+                    this.controller.getTabController().renameTab(tab.label, newLabel.trim());
+                    this.renderTabBar();
+                }
+            });
+    
+            this.tabBar.appendChild(btn);
+        }
+    
+        // Add tab button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'neonova-tab-add';
+        addBtn.title = 'Add tab';
+        addBtn.textContent = '+';
+        addBtn.addEventListener('click', () => {
+            const label = prompt('New tab name:');
+            if (label?.trim()) {
+                this.controller.getTabController().addTab(label.trim());
+                this.renderTabBar();
+            }
+        });
+        this.tabBar.appendChild(addBtn);
+    }
+
+    mountTabView(containerEl) {
+        this.#tabController.view.mount(containerEl);
+    }
+
+    getTabController() {
+        return this.#tabController;
+    }
+/**
     clearRows() {
         const tbody = this.panel.querySelector('#customer-table-body');
         if (tbody) tbody.replaceChildren();  // modern, clean (or innerHTML = '')
@@ -289,7 +381,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         const tbody = this.panel.querySelector('#customer-table-body');
         if (tbody) tbody.appendChild(fragment);
     }
-
+**/
     attachHeaderListeners() {
         const privacyBtn = this.header.querySelector('#privacy-toggle-btn');
         if (privacyBtn) {
