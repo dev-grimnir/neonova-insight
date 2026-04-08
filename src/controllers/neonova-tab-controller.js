@@ -123,32 +123,7 @@ class NeonovaTabController {
         return this.tabs.find(t => t.isActive) || this.tabs[0];
     }
 
-    addTab(label) {
-        const tab = new NeonovaTabModel(label);
-        this.tabs.push(tab);
-        this.view.render();
-        return tab;
-    }
-
-    removeTab(label) {
-        if (this.tabs.length === 1) return;
-        const idx = this.tabs.findIndex(t => t.label === label);
-        if (idx === -1) return;
-
-        const wasActive = this.tabs[idx].isActive;
-        this.tabs.splice(idx, 1);
-
-        if (wasActive) {
-            this.tabs[0].isActive = true;
-        }
-
-        this.view.render();
-    }
-
-    switchTab(label) {
-        this.tabs.forEach(t => t.isActive = t.label === label);
-        this.view.render();
-    }
+    
 
     addCustomerToActiveTab(customerController) {
         this.getActiveTab().addCustomer(customerController);
@@ -160,7 +135,41 @@ class NeonovaTabController {
         if (tab) tab.removeCustomer(radiusUsername);
         this.view.render();
     }
+    
+    async addTab(label) {
+        const tab = new NeonovaTabModel(label);
+        this.tabs.push(tab);
+        await this.save();
+        this.view.render();
+        this.dashboardController.view.renderTabBar();
+        return tab;
+    }
 
+    async removeTab(label) {
+        if (this.tabs.length === 1) return;
+        const idx = this.tabs.findIndex(t => t.label === label);
+        if (idx === -1) return;
+        const wasActive = this.tabs[idx].isActive;
+        this.tabs.splice(idx, 1);
+        if (wasActive) this.tabs[0].isActive = true;
+        await this.save();
+        this.view.render();
+        this.dashboardController.view.renderTabBar();
+    }
+    
+    async renameTab(oldLabel, newLabel) {
+        const tab = this.tabs.find(t => t.label === oldLabel);
+        if (tab) tab.rename(newLabel);
+        await this.save();
+        this.dashboardController.view.renderTabBar();
+    }
+    
+    async switchTab(label) {
+        this.tabs.forEach(t => t.isActive = t.label === label);
+        await this.save();
+        this.view.render();
+        this.dashboardController.view.renderTabBar();
+    }
     renameTab(oldLabel, newLabel) {
         const tab = this.tabs.find(t => t.label === oldLabel);
         if (tab) tab.rename(newLabel);
