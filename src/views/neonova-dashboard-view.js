@@ -239,6 +239,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     background: #27272a;
                     color: #e4e4e7;
                 }
+                .neonova-tab-btn {
+                    border: 1px solid #3f3f46;
+                    border-bottom: none;
+                }
                 .neonova-tab-btn.active {
                     background: #18181b;
                     color: #34d399;
