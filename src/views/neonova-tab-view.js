@@ -7,7 +7,6 @@ class NeonovaTabView extends BaseNeonovaView {
 
     mount(containerEl) {
         this.container = containerEl;
-        this.render();
     }
 
     render() {
