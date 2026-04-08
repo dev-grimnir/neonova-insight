@@ -9,17 +9,6 @@
 // @run-at       document-end
 // @updateURL    https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
 // @downloadURL  https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
-// ==UserScript==
-// @name         NovaSubscriber - Dashboard
-// @namespace    http://tampermonkey.net/
-// @version      32.12
-// @description  Real-time customer modem connection dashboard (separate script)
-// @author       dev-grimnir
-// @match        https://admin.neonova.net/*
-// @grant        none
-// @run-at       document-end
-// @updateURL    https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
-// @downloadURL  https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
 
 // --- External libraries ---
 // @require https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
