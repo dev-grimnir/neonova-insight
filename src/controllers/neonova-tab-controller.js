@@ -2,7 +2,6 @@ class NeonovaTabController {
     constructor(dashboardController) {
         this.dashboardController = dashboardController;
         this.tabs = [];
-        this.view = new NeonovaTabView(this);
     }
 
     //methods from dashboard controller
