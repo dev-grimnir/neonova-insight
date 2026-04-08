@@ -9,11 +9,7 @@
 // @run-at       document-end
 // @updateURL    https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
 // @downloadURL  https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/scripts/neonova-dashboard.user.js
-
-// --- External libraries ---
 // @require https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
-
-// --- Models ---
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/log-entry.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/neonova-customer-model.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/neonova-dashboard-model.js
@@ -21,8 +17,6 @@
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/neonova-report-model.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/neonova-daily-disconnect-model.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/models/neonova-snapshot-model.js
-
-// --- Controllers ---
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-crypto-controller.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-http-controller.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-progress-controller.js
@@ -36,8 +30,6 @@
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-tab-controller.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-add-customer-controller.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-dashboard-controller.js
-
-// --- Views ---
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/base-neonova-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-base-modal-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-spinner-view.js
