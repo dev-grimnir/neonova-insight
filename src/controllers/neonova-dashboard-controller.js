@@ -12,6 +12,11 @@ class NeonovaDashboardController {
         this.#modalActive = false;
     }
 
+    showAddCustomer() {
+        const addController = new NeonovaAddCustomerController(this.#tabController);
+        addController.show();
+    }
+    
     static async create() {
         const model = new NeonovaDashboardModel();
         const controller = new NeonovaDashboardController(model);
