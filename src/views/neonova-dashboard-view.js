@@ -173,6 +173,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.headerContainer = this.panel.querySelector('#header-container');
         this.contentArea = this.panel.querySelector('#content-area');
         this.tabBar = this.panel.querySelector('#tab-bar');
+        this.tabBar.addEventListener('click', (e) => e.stopPropagation());
     
         const temp = document.createElement('div');
         temp.innerHTML = this.getHeaderHTML();
