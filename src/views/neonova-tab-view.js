@@ -12,13 +12,7 @@ class NeonovaTabView extends BaseNeonovaView {
 
     render() {
         if (!this.container) return;
-        const activeTab = this.tabController.getActiveTab();
-        if (!activeTab) return;
-        this.clearRows();
-        const rows = activeTab.customers.map(ctrl => ctrl.getRowElement()).filter(Boolean);
-        const fragment = document.createDocumentFragment();
-        rows.forEach(row => fragment.appendChild(row));
-        this.container.appendChild(fragment);
+        this.tabController.rebuildTable();
     }
 
     clearRows() {
