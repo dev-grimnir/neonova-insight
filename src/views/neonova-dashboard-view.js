@@ -356,13 +356,6 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.tabBar.appendChild(addBtn);
     }
 
-    mountTabView(containerEl) {
-        this.#tabController.view.mount(containerEl);
-    }
-
-    getTabController() {
-        return this.#tabController;
-    }
 /**
     clearRows() {
         const tbody = this.panel.querySelector('#customer-table-body');
