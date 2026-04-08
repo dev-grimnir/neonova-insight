@@ -411,8 +411,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
 
         // Add customer
         this.header.querySelector('#add-customer-btn')?.addEventListener('click', () => {
-            const addController = new NeonovaAddCustomerController(this.controller);
-            addController.show();
+            this.controller.showAddCustomer();
         });
     }
 
