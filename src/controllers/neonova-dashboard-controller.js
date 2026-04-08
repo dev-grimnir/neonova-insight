@@ -145,6 +145,11 @@ class NeonovaDashboardController {
 
     async poll() {
         this.#tabController.poll();
+        this.model.lastUpdatedDisplay = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
         /**
         if (!this.initialized || !this.customerControllers || this.customerControllers.size === 0 || this.model.isPollingPaused) {
             return;
