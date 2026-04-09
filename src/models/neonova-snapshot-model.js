@@ -13,15 +13,13 @@ class NeonovaSnapshotModel {
             weekday: 'short', 
             month: 'short', 
             day: 'numeric', 
-            year: 'numeric' 
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
         };
-        
-        const startStr = this.startDate.toLocaleDateString('en-US', options);
-        const endStr   = this.endDate.toLocaleDateString('en-US', options);
-        
-        return this.startDate.toDateString() === this.endDate.toDateString()
-            ? startStr
-            : `${startStr} – ${endStr}`;
+        const startStr = this.startDate.toLocaleString('en-US', options);
+        const endStr   = this.endDate.toLocaleString('en-US', options);
+        return `${startStr} – ${endStr}`;
     }
 
     getUptimePercent() {
