@@ -100,7 +100,7 @@ class NeonovaCustomerController {
             friendlyName: trimmed
         });
         
-        await this.dashboardController.save();
+        await this.dashboardController.getTabController().save();
         this.view.update();  // refresh row to show new name
         return true;
     }
