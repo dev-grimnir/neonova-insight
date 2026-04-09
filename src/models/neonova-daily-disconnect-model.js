@@ -6,7 +6,17 @@ class NeonovaDailyDisconnectModel {
         this.events        = events || [];
     }
 
-    getDateString() {
-        return this.date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    getDateRangeString() {
+        const options = { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        };
+        const startStr = this.startDate.toLocaleString('en-US', options);
+        const endStr   = this.endDate.toLocaleString('en-US', options);
+        return `${startStr} – ${endStr}`;
     }
 }
