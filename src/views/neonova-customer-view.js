@@ -82,6 +82,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 </span>
             </td>
             <td class="px-2 py-1 text-sm text-gray-300">${durationStr}</td>
+            <td class="px-2 py-1 snapshot-cell"></td>
             <td class="px-2 py-1 text-right whitespace-nowrap">
                 <button class="remove-btn text-red-400 hover:text-red-300 text-lg font-bold px-1.5" title="Remove Customer">
                     ×
