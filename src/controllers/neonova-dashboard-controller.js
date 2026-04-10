@@ -165,6 +165,25 @@ class NeonovaDashboardController {
 
     async updateCustomerStatus(customer) {
         try {
+
+            // === Buffer update (independent of status-pill logic below) ===
+            // Only fetches events newer than what's already buffered. Failures
+            // here are silent — the status-pill path below runs regardless.
+            if (customer.eventHistory.length > 0) {
+                try {
+                    const lastMs = customer.eventHistory[customer.eventHistory.length - 1].dateObj.getTime();
+                    const bufferSince = new Date(lastMs - 60 * 1000);   // 1-min overlap; dedupe handles collisions
+                    const newEvents = await NeonovaHTTPController.paginateReportLogs(
+                        customer.radiusUsername, bufferSince, new Date(), 0, 0, 23, 59
+                    );
+                    if (Array.isArray(newEvents) && newEvents.length > 0) {
+                        customer.ingestEvents(newEvents);
+                    }
+                } catch (bufferErr) {
+                    console.warn('[updateCustomerStatus] buffer update failed (non-fatal):', bufferErr);
+                }
+            }
+            
             // Compute the "normal" sinceDate (last known event or last poll)
             let sinceDate = null;
             if (customer.lastEventTime !== null) {
