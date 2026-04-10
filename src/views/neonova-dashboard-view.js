@@ -309,8 +309,12 @@ class NeonovaDashboardView extends BaseNeonovaView {
             const btn = document.createElement('button');
             btn.className = `neonova-tab-btn${tab.isActive ? ' active' : ''}`;
             btn.dataset.label = tab.label;
+            const { connected, disconnected } = tab.getConnectionCounts();
             btn.innerHTML = `
                 <span class="tab-label">${tab.label}</span>
+                <span style="margin-left: 6px; font-size: 12px; font-weight: 600; font-family: ui-monospace, monospace;">
+                    <span style="color: #34d399;">${connected}</span><span style="color: #71717a;">/</span><span style="color: #ef4444;">${disconnected}</span>
+                </span>
                 <span class="tab-close" title="Close tab">&times;</span>
             `;
     
