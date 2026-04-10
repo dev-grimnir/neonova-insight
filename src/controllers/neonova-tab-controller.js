@@ -48,6 +48,7 @@ class NeonovaTabController {
         });
     
         this.view.setRows(rows);
+        this.dashboardController.view.renderTabBar();
     }
     
     async add(radiusUsername, friendlyName) {
