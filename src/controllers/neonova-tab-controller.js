@@ -66,7 +66,19 @@ class NeonovaTabController {
     
         this.rebuildTable();
         this.dashboardController.view.updateHeader();
-    
+
+        // Best-effort 24h backfill for the event buffer. Failures are silent —
+        // the poll will build up history from here regardless.
+        try {
+            const since = new Date(Date.now() - NeonovaCustomerModel.RETENTION_MS);
+            const events = await NeonovaHTTPController.paginateReportLogs(
+                trimmed, since, new Date(), 0, 0, 23, 59
+            );
+            if (Array.isArray(events)) ctrl.model.ingestEvents(events);
+        } catch (err) {
+            console.warn('[tabController.add] backfill failed (non-fatal):', err);
+        }
+        
         try {
             await this.dashboardController.updateCustomerStatus(ctrl.model);
     
