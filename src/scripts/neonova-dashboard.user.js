@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovaSubscriber - Dashboard
 // @namespace    http://tampermonkey.net/
-// @version      35.20
+// @version      36.0
 // @description  Real-time customer modem connection dashboard (separate script)
 // @author       dev-grimnir
 // @match        https://admin.neonova.net/*
@@ -33,6 +33,7 @@
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/controllers/neonova-dashboard-controller.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/base-neonova-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-base-modal-view.js
+// @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-inline-snapshot-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-spinner-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-passphrase-view.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/views/neonova-customer-view.js
