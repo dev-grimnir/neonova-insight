@@ -65,40 +65,75 @@ class NeonovaCustomerModel {
     }
 
     getDurationStr() {
-      const seconds = this.durationSec || 0;
-      let durationStr = '';
-    
-      if (seconds < 60) {
-        durationStr = '<1min';
-      } else {
-        const days = Math.floor(seconds / 86400);
-        const hours = Math.floor((seconds % 86400) / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-    
-        if (days > 0) {
-          durationStr += `${days}d `;
+        const seconds = this.durationSec || 0;
+        let durationStr = '';
+
+        if (seconds < 60) {
+            durationStr = '<1min';
+        } else {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (days > 0)  durationStr += `${days}d `;
+            if (hours > 0) durationStr += `${hours}h `;
+            durationStr += `${minutes}m`;
         }
-        if (hours > 0) {
-          durationStr += `${hours}h `;
+
+        let timeStr = '';
+        if (this.lastEventTime) {
+            const eventDate = new Date(this.lastEventTime);
+            if (!isNaN(eventDate.getTime())) {
+                timeStr = ` (${eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })})`;
+            }
         }
-        durationStr += `${minutes}m`;
-      }
-    
-      let timeStr = '';
-      if (this.lastEventTime) {
-        const eventDate = new Date(this.lastEventTime);
-        if (!isNaN(eventDate.getTime())) {  // Check for valid Date
-          timeStr = ` (${eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })})`;
-        }
-      }
-    
-      return `${durationStr}${timeStr}`;
+
+        return `${durationStr}${timeStr}`;
     }
 
     update(status, durationSec) {
         this.status = status;
         this.durationSec = durationSec;
         this.lastUpdate = new Date().toLocaleString();
+    }
+
+    /**
+     * Single funnel for adding events to the buffer. Handles:
+     *   - Normalizing input (tolerates string timestamps)
+     *   - Merging with existing events
+     *   - Sorting chronologically
+     *   - Deduping by (timestamp + status)
+     *   - Trimming to the retention window
+     *
+     * Both the add-path (24h backfill) and the poll-path (new events per tick)
+     * go through this method. Never mutate eventHistory directly.
+     */
+    ingestEvents(events) {
+        if (!Array.isArray(events) || events.length === 0) return;
+
+        const normalized = events
+            .map(e => ({
+                dateObj: e.dateObj instanceof Date ? e.dateObj : new Date(e.dateObj),
+                status: e.status
+            }))
+            .filter(e => !isNaN(e.dateObj.getTime()));
+
+        const merged = this.eventHistory.concat(normalized);
+        merged.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+        // Dedupe — same timestamp + same status is the same event
+        const deduped = [];
+        let lastKey = null;
+        for (const e of merged) {
+            const key = `${e.dateObj.getTime()}|${e.status}`;
+            if (key !== lastKey) {
+                deduped.push(e);
+                lastKey = key;
+            }
+        }
+
+        // Trim to retention window
+        const cutoff = Date.now() - NeonovaCustomerModel.RETENTION_MS;
+        this.eventHistory = deduped.filter(e => e.dateObj.getTime() >= cutoff);
     }
 
     toJSON() {
