@@ -54,6 +54,13 @@ class NeonovaCustomerModel {
         for (const e of deduped) {
             if (e.dateObj.getTime() >= cutoff) trimmed.push(e);
         }
+        
+        // Always preserve the most recent event, even if older than the retention window.
+        // The renderer needs at least one event to know the modem's pre-window state.
+        if (trimmed.length === 0 && deduped.length > 0) {
+            trimmed.push(deduped[deduped.length - 1]);
+        }
+        
         this.eventHistory = trimmed;
     }
 
