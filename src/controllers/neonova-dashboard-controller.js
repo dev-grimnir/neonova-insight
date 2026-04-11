@@ -165,6 +165,30 @@ class NeonovaDashboardController {
 
     async updateCustomerStatus(customer) {
         try {
+
+            // === Buffer update (independent of status-pill logic below) ===
+            // Cold-start pulls the full retention window; subsequent polls
+            // only fetch events newer than the buffer's tail. Failures are
+            // silent — the status-pill path below runs regardless.
+            try {
+                let bufferSince;
+                if (customer.eventHistory.length > 0) {
+                    const lastMs = customer.eventHistory[customer.eventHistory.length - 1].dateObj.getTime();
+                    bufferSince = new Date(lastMs - 60 * 1000);
+                } else {
+                    bufferSince = new Date(Date.now() - NeonovaCustomerModel.RETENTION_MS);
+                }
+    
+                const newEvents = await NeonovaHTTPController.paginateReportLogs(
+                    customer.radiusUsername, bufferSince, new Date(), 0, 0, 23, 59
+                );
+                if (Array.isArray(newEvents) && newEvents.length > 0) {
+                    customer.ingestEvents(newEvents);
+                }
+            } catch (bufferErr) {
+                console.warn('[updateCustomerStatus] buffer update failed (non-fatal):', bufferErr);
+            }
+            
             // Compute the "normal" sinceDate (last known event or last poll)
             let sinceDate = null;
             if (customer.lastEventTime !== null) {
