@@ -70,10 +70,30 @@ class NeonovaInlineSnapshotView {
     }
 
     #clipToWindow(events) {
+        if (!events || events.length === 0) return [];
+    
+        const sorted = events.slice().sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
         const cutoff = Date.now() - NeonovaInlineSnapshotView.WINDOW_MS;
-        return events
-            .filter(e => e.dateObj && e.dateObj.getTime() >= cutoff)
-            .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    
+        const inWindow = sorted.filter(e => e.dateObj.getTime() >= cutoff);
+    
+        // If nothing falls inside the window, fall back to the single most recent
+        // pre-window event — it tells us the modem's state for the whole 24h.
+        if (inWindow.length === 0) {
+            return [sorted[sorted.length - 1]];
+        }
+    
+        // If the oldest in-window event isn't at the very start of the window,
+        // prepend the most recent pre-window event so the leading region is correct.
+        const firstInWindowMs = inWindow[0].dateObj.getTime();
+        if (firstInWindowMs > cutoff) {
+            const preWindow = sorted.filter(e => e.dateObj.getTime() < cutoff);
+            if (preWindow.length > 0) {
+                inWindow.unshift(preWindow[preWindow.length - 1]);
+            }
+        }
+    
+        return inWindow;
     }
 
     #appendRect(svg, x, width, color) {
