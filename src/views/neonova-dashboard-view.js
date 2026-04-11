@@ -4,7 +4,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         { key: 'radiusUser',   label: 'RADIUS Username', width: 18, align: 'left'  },
         { key: 'status',       label: 'Status',          width: 10, align: 'left'  },
         { key: 'duration',     label: 'Duration',        width: 14, align: 'left'  },
-        { key: 'snapshot',     label: 'Snapshot',        width: 28, align: 'left'  },
+        { key: 'snapshot',     label: '24 Hr Snapshot',        width: 28, align: 'left'  },
         { key: 'action',       label: 'Action',          width: 12, align: 'right' }
         ];
     constructor(controller) {
