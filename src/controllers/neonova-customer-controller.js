@@ -25,35 +25,24 @@ class NeonovaCustomerController {
         return this.#model.friendlyName;
     }
 
-    // Serialization - store plain JSON
     toJSON() {
-        const eventTime = this.#model.lastEventTime;
-        return {
-            radiusUsername: this.#model.radiusUsername,
-            friendlyName: this.#model.friendlyName,
-            status: this.#model.status,
-            durationSec: this.#model.durationSec,
-            lastEventTime: eventTime instanceof Date
-                ? eventTime.toISOString()
-                : (typeof eventTime === 'number' ? new Date(eventTime).toISOString() : null),
-            lastUpdate: this.#model.lastUpdate
-        };
+        // Delegate to the model so buffer + any future fields come along automatically
+        return this.#model.toJSON();
     }
-
-    // Rehydrate from stored JSON
+    
     static fromJSON(json, dashboardController) {
-        const ctrl = new NeonovaCustomerController(
+        return new NeonovaCustomerController(
             json.radiusUsername,
             json.friendlyName,
             dashboardController,
-            {   
+            {
                 status: json.status || 'Connecting...',
                 durationSec: json.durationSec ?? 0,
                 lastUpdate: json.lastUpdate,
-                lastEventTime: json.lastEventTime
+                lastEventTime: json.lastEventTime,
+                eventHistory: json.eventHistory
             }
         );
-        return ctrl;
     }
 
     // Called by dashboard controller during polling

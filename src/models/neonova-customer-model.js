@@ -1,6 +1,7 @@
 class NeonovaCustomerModel {
-    static RETENTION_MS = 24 * 60 * 60 * 1000;   // 24h buffer window
 
+    static RETENTION_MS = 24 * 60 * 60 * 1000;
+    
     constructor(radiusUsername, friendlyName = '', initialState = null) {
         const state = initialState || {};
         this.radiusUsername = radiusUsername.trim();
@@ -9,13 +10,58 @@ class NeonovaCustomerModel {
         this.durationSec = state.durationSec ?? 0;
         this.lastUpdate = state.lastUpdate || new Date().toLocaleString();
         this.lastEventTime = state.lastEventTime ? new Date(state.lastEventTime) : null;
+        this.eventHistory = [];
+        if (Array.isArray(state.eventHistory)) {
+            for (const e of state.eventHistory) {
+                const d = new Date(e.dateObj);
+                if (!isNaN(d.getTime())) {
+                    this.eventHistory.push({ dateObj: d, status: e.status });
+                }
+            }
+        }
+    }
 
-        // Rehydrate buffer from persisted state, converting ISO strings back to Dates
-        this.eventHistory = Array.isArray(state.eventHistory)
-            ? state.eventHistory
-                .map(e => ({ dateObj: new Date(e.dateObj), status: e.status }))
-                .filter(e => !isNaN(e.dateObj.getTime()))
-            : [];
+    /**
+     * Single funnel for adding events to the buffer.
+     * Sorts, dedupes by (timestamp + status), trims to retention window.
+     */
+    ingestEvents(events) {
+        if (!Array.isArray(events) || events.length === 0) return;
+    
+        const normalized = [];
+        for (const e of events) {
+            const d = e.dateObj instanceof Date ? e.dateObj : new Date(e.dateObj);
+            if (!isNaN(d.getTime())) {
+                normalized.push({ dateObj: d, status: e.status });
+            }
+        }
+    
+        const merged = this.eventHistory.concat(normalized);
+        merged.sort(function(a, b) { return a.dateObj.getTime() - b.dateObj.getTime(); });
+    
+        const deduped = [];
+        let lastKey = null;
+        for (const e of merged) {
+            const key = e.dateObj.getTime() + '|' + e.status;
+            if (key !== lastKey) {
+                deduped.push(e);
+                lastKey = key;
+            }
+        }
+    
+        const cutoff = Date.now() - NeonovaCustomerModel.RETENTION_MS;
+        const trimmed = [];
+        for (const e of deduped) {
+            if (e.dateObj.getTime() >= cutoff) trimmed.push(e);
+        }
+        
+        // Always preserve the most recent event, even if older than the retention window.
+        // The renderer needs at least one event to know the modem's pre-window state.
+        if (trimmed.length === 0 && deduped.length > 0) {
+            trimmed.push(deduped[deduped.length - 1]);
+        }
+        
+        this.eventHistory = trimmed;
     }
 
     getDurationStr() {

@@ -31,6 +31,9 @@ class NeonovaCustomerView extends BaseNeonovaView {
         // Default to safe values if somehow undefined (shouldn't happen after model defaults)
         const status = cust.status ?? 'Connecting...';
         const durationStr = cust.getDurationStr?.() ?? '—';
+
+        console.log('[snapshot]', cust.radiusUsername, 'events:', cust.eventHistory?.length ?? 'undefined', cust.eventHistory);
+        const inlineSnapshot = new NeonovaInlineSnapshotView(cust).render();
     
         // Status → style mapping (expand as needed)
         const statusStyles = {
@@ -82,6 +85,9 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 </span>
             </td>
             <td class="px-2 py-1 text-sm text-gray-300">${durationStr}</td>
+            <td class="px-2 py-1 snapshot-cell" style="vertical-align: middle;">
+                <div class="snapshot-host" style="width: 100%; height: 20px;"></div>
+            </td>
             <td class="px-2 py-1 text-right whitespace-nowrap">
                 <button class="remove-btn text-red-400 hover:text-red-300 text-lg font-bold px-1.5" title="Remove Customer">
                     ×
@@ -91,6 +97,9 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 </button>
             </td>
         `;
+
+        const host = this.#tr.querySelector('.snapshot-host');
+        if (host) host.appendChild(inlineSnapshot);
     
         if (this.#isEditing) this.#enterEditMode();
     }

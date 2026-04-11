@@ -1,9 +1,30 @@
 class NeonovaDashboardView extends BaseNeonovaView {
+    static COLUMNS = [
+        { key: 'friendlyName', label: 'Friendly Name',   width: 18, align: 'left'  },
+        { key: 'radiusUser',   label: 'RADIUS Username', width: 18, align: 'left'  },
+        { key: 'status',       label: 'Status',          width: 10, align: 'left'  },
+        { key: 'duration',     label: 'Duration',        width: 14, align: 'left'  },
+        { key: 'snapshot',     label: '24 Hr Snapshot',        width: 28, align: 'left'  },
+        { key: 'action',       label: 'Action',          width: 12, align: 'right' }
+        ];
     constructor(controller) {
         super();
         this.controller = controller;
         this.isMinimized = true;
         this.createElements();
+    }
+
+    static buildColGroupHTML() {
+        return '<colgroup>' +
+            NeonovaDashboardView.COLUMNS.map(c => `<col style="width: ${c.width}%;">`).join('') +
+            '</colgroup>';
+    }
+
+    static buildTheadHTML() {
+        const ths = NeonovaDashboardView.COLUMNS
+            .map(c => `<th class="px-6 py-2 text-${c.align}">${c.label}</th>`)
+            .join('');
+        return `<thead><tr class="text-xs uppercase tracking-widest text-zinc-500">${ths}</tr></thead>`;
     }
 
     showToast(message, { type = 'error', duration = 5000 } = {}) {
@@ -127,39 +148,18 @@ class NeonovaDashboardView extends BaseNeonovaView {
     
                     <!-- Card -->
                     <div class="flex-1 bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden flex flex-col">
-    
-                        <!-- Static column header -->
+                            <!-- Static column header -->
                         <div class="px-6 py-1 bg-zinc-900 border-b border-zinc-800">
                             <table class="w-full table-fixed">
-                                <colgroup>
-                                    <col style="width: 28%;">
-                                    <col style="width: 25%;">
-                                    <col style="width: 14%;">
-                                    <col style="width: 18%;">
-                                    <col style="width: 15%;">
-                                </colgroup>
-                                <thead>
-                                    <tr class="text-xs uppercase tracking-widest text-zinc-500">
-                                        <th class="px-6 py-2 text-left">Friendly Name</th>
-                                        <th class="px-6 py-2 text-left">RADIUS Username</th>
-                                        <th class="px-6 py-2 text-left">Status</th>
-                                        <th class="px-6 py-2 text-left">Duration</th>
-                                        <th class="px-6 py-2 text-right">Action</th>
-                                    </tr>
-                                </thead>
+                                ${NeonovaDashboardView.buildColGroupHTML()}
+                                ${NeonovaDashboardView.buildTheadHTML()}
                             </table>
                         </div>
-    
+                        
                         <!-- Scrollable body — owned by NeonovaTabView -->
                         <div class="flex-1 overflow-y-auto px-6 neonova-scroll">
                             <table class="w-full table-fixed">
-                                <colgroup>
-                                    <col style="width: 28%;">
-                                    <col style="width: 25%;">
-                                    <col style="width: 14%;">
-                                    <col style="width: 18%;">
-                                    <col style="width: 15%;">
-                                </colgroup>
+                                ${NeonovaDashboardView.buildColGroupHTML()}
                                 <tbody id="customer-table-body"></tbody>
                             </table>
                         </div>
