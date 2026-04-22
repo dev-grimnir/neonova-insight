@@ -31,8 +31,6 @@ class NeonovaCustomerView extends BaseNeonovaView {
         // Default to safe values if somehow undefined (shouldn't happen after model defaults)
         const status = cust.status ?? 'Connecting...';
         const durationStr = cust.getDurationStr?.() ?? '—';
-
-        console.log('[snapshot]', cust.radiusUsername, 'events:', cust.eventHistory?.length ?? 'undefined', cust.eventHistory);
         const inlineSnapshot = new NeonovaInlineSnapshotView(cust).render();
     
         // Status → style mapping (expand as needed)
