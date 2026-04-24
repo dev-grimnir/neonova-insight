@@ -1,287 +1,124 @@
 class NeonovaSnapshotView extends NeonovaBaseModalView {
-    #hasShown = null;
-    #history = null;
-    #model = null;
-    #chartInstance = null;
-    
     constructor(controller, model) {
         super(controller);
-        this.#model = model;
-        this.#hasShown = false;
-        this.#chartInstance = null;
-        this.#history = [];
+        this.controller = controller;
+        this.model = model;
+        this.chart = null;
     }
 
     show() {
-        if (this.#hasShown) return;
-        this.#hasShown = true;
-    
         const modalHTML = `
-            <div id="snapshot-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[10001] opacity-0 transition-opacity duration-400">
+            <div id="snapshot-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center z-[10000] opacity-0 transition-opacity duration-400">
                 <div class="bg-[#18181b] border border-[#27272a] rounded-3xl w-[1280px] max-w-[96vw] max-h-[96vh] overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-all duration-500">
                     <div class="px-8 py-6 border-b border-[#27272a] bg-[#09090b] flex-shrink-0 flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <button id="back-btn" class="hidden px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
-                                ← Back
+                        <div id="snapshot-header"></div>
+                        <div class="flex items-center gap-3">
+                            <button id="snapshot-back-btn" class="px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl items-center gap-2 transition hidden">
+                                <i class="fas fa-arrow-left"></i> Back
                             </button>
-                            <div>
-                                <div class="text-emerald-400 text-xs font-mono tracking-widest" id="snapshot-subtitle"></div>
-                                <div class="text-3xl font-semibold text-white mt-1" id="snapshot-daterange"></div>
-                                <div class="text-lg font-medium text-emerald-400 mt-1" id="snapshot-uptime"></div>
-                            </div>
+                            <button id="snapshot-close-btn" class="px-6 py-2.5 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
+                                <i class="fas fa-times"></i> Close
+                            </button>
                         </div>
-                        <button id="close-snapshot-btn" class="px-6 py-2.5 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
-                            ✕ Close
-                        </button>
                     </div>
-                    <div id="snapshot-content" class="flex-1 overflow-y-auto p-8 bg-[#18181b]"></div>
+                    <div id="snapshot-content" class="flex-1 overflow-hidden p-8 bg-[#18181b]">
+                        <div class="w-full h-full"><canvas id="snapshot-canvas"></canvas></div>
+                    </div>
                 </div>
             </div>
         `;
-    
-        super.createModal(modalHTML).then(() => {
-            this.attachListeners();
-    
-            const modalOverlay = this.modal.querySelector('#snapshot-modal');
-            if (modalOverlay) {
-                modalOverlay.style.opacity = '1';
-                modalOverlay.style.transform = 'scale(1)';
-            }
-    
-            this.render();
-        }).catch(err => {
-            console.error('Snapshot modal creation failed:', err);
-        });
+
+        super.createModal(modalHTML);
+        this.#renderHeader();
+        this.#renderChart();
+        this.#attachListeners();
     }
-    
-    render() {
-        if (!this.modal) return;
-    
-        const model = this.controller.model;
-    
-        // Header
-        const subtitle  = this.modal.querySelector('#snapshot-subtitle');
-        const daterange = this.modal.querySelector('#snapshot-daterange');
-        const uptime    = this.modal.querySelector('#snapshot-uptime');
-        if (subtitle)  subtitle.textContent  = `${model.friendlyName || 'Customer'} — Connection Timeline`;
-        if (daterange) daterange.textContent = model.getDateRangeString();
-        if (uptime)    uptime.textContent    = `Uptime: ${model.getUptimePercent()}%`;
-    
-        // Content
-        const content = this.modal.querySelector('#snapshot-content');
-        if (!content) return;
-        content.innerHTML = this.generateSnapshotHTML();
-    
-        if (!model.events || model.events.length < 2) {
-            content.innerHTML += `<div class="text-center text-zinc-400 py-20 text-lg">No connection events found for this period.</div>`;
+
+    /* ============================================================
+     *  RENDER
+     * ============================================================ */
+
+    #renderHeader() {
+        const header = this.modal.querySelector('#snapshot-header');
+        if (!header) return;
+        const m = this.model;
+        header.innerHTML = `
+            <div class="text-emerald-400 text-xs font-mono tracking-widest">CONNECTION TIMELINE</div>
+            <div class="text-2xl font-semibold text-white mt-1">${m.friendlyName}</div>
+            <div class="text-sm text-zinc-400 mt-1">${m.startDate.toLocaleString()} — ${m.endDate.toLocaleString()}</div>
+            <div class="text-sm text-emerald-400 mt-1">Uptime: ${Number(m.metrics.percentConnected || 0).toFixed(1)}%</div>
+        `;
+        this.#updateBackButtonVisibility();
+    }
+
+    #renderChart() {
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
+        }
+        const canvas = this.modal.querySelector('#snapshot-canvas');
+        if (!canvas) return;
+        this.chart = NeonovaSnapshotChart.build(
+            canvas,
+            this.model,
+            (start, end) => this.#onRangeClick(start, end)
+        );
+    }
+
+    #updateBackButtonVisibility() {
+        const btn = this.modal.querySelector('#snapshot-back-btn');
+        if (!btn) return;
+        if (this.controller.canGoBack()) {
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+        } else {
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+        }
+    }
+
+    /* ============================================================
+     *  EVENT WIRING
+     * ============================================================ */
+
+    #attachListeners() {
+        const closeBtn = this.modal.querySelector('#snapshot-close-btn');
+        const backBtn  = this.modal.querySelector('#snapshot-back-btn');
+        const modalEl  = this.modal.querySelector('#snapshot-modal');
+
+        closeBtn?.addEventListener('click', () => this.hide());
+        modalEl?.addEventListener('click', e => { if (e.target === modalEl) this.hide(); });
+        backBtn?.addEventListener('click', () => this.#onBack());
+    }
+
+    async #onRangeClick(startDate, endDate) {
+        const model = await this.controller.drillTo(startDate, endDate);
+        if (!model) {
+            alert('No data for that range.');
             return;
         }
-    
-        setTimeout(() => this.#initChart(), 150);
-    }
-    
-    showLoading(dateStr) {
-        const content = this.modal?.querySelector('#snapshot-content');
-        if (!content) return;
-        content.innerHTML = `
-            <div class="flex items-center justify-center h-full gap-4">
-                <div class="w-8 h-8 rounded-full border-4 border-zinc-700 border-t-emerald-400 animate-spin"></div>
-                <span class="text-emerald-400 font-mono text-sm">Loading ${dateStr}...</span>
-            </div>
-        `;
-    }
-    
-    setBackButtonVisible(visible) {
-        const backBtn = this.modal?.querySelector('#back-btn');
-        if (backBtn) backBtn.classList.toggle('hidden', !visible);
-    }
-    
-    attachListeners() {
-        const closeBtn = this.modal.querySelector('#close-snapshot-btn');
-        const backBtn  = this.modal.querySelector('#back-btn');
-        const modalEl  = this.modal.querySelector('#snapshot-modal');
-    
-        closeBtn?.addEventListener('click', () => this.hide());
-        backBtn?.addEventListener('click',  () => this.controller.goBack());
-        modalEl?.addEventListener('click', e => {
-            if (e.target === modalEl) this.hide();
-        });
+        this.model = model;
+        this.#renderHeader();
+        this.#renderChart();
     }
 
-    generateSnapshotHTML() {
-        return `
-            <div class="max-w-6xl mx-auto">
-                <div class="bg-zinc-900 border border-zinc-700 rounded-3xl p-4" style="height: 340px;">
-                    <canvas id="snapshotChart" class="w-full h-full"></canvas>
-                </div>
-            </div>
-            <style>
-                #snapshot-content::-webkit-scrollbar { width: 7px; }
-                #snapshot-content::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
-                #snapshot-content::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
-                #snapshot-content::-webkit-scrollbar-thumb:hover { background: #10b981; }
-                #snapshot-content { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
-            </style>
-        `;
-    }
-
-    #initChart() {
-        const canvas = document.getElementById('snapshotChart');
-        if (!canvas) return;
-    
-        const model = this.controller.model;
-        const sortedEvents = [...model.events].sort((a, b) => 
-            (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
-        );
-        const startTime = model.startDate.getTime();
-        const endTime   = model.endDate.getTime();
-
-        // Build periods FIRST — single source of truth for tooltip
-        const periods = [];
-        let i = 0;
-        while (i < sortedEvents.length) {
-            const isConnected = (sortedEvents[i].status === 'Start' || sortedEvents[i].status === 'connected');
-            const startMs = sortedEvents[i].dateObj.getTime();
-        
-            let j = i + 1;
-            while (j < sortedEvents.length &&
-                   (sortedEvents[j].status === 'Start' || sortedEvents[j].status === 'connected') === isConnected) {
-                j++;
-            }
-        
-            const endMs = j < sortedEvents.length
-                ? sortedEvents[j].dateObj.getTime() - 1
-                : endTime;
-        
-            periods.push({ startMs, endMs, isConnected });
-            i = j;
-        }
-        this._periods = periods;
-
-        // Build chart points from periods (two points each = no diagonals)
-        const rawPeriods = [];
-        periods.forEach(p => {
-            const y = p.isConnected ? 1 : -1;
-            rawPeriods.push({ x: p.startMs, y });
-            rawPeriods.push({ x: p.endMs,   y });
-        });
-    
-        if (this.#chartInstance) this.#chartInstance.destroy();
-    
-        this.#chartInstance = new Chart(canvas, {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        label: 'Connected',
-                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
-                        borderColor: '#10b981',
-                        backgroundColor: '#10b98188',
-                        borderWidth: 0,
-                        stepped: 'after',
-                        tension: 0,
-                        fill: 'origin',
-                        pointRadius: 0
-                    },
-                    {
-                        label: 'Disconnected',
-                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
-                        borderColor: '#ef4444',
-                        backgroundColor: '#ef444488',
-                        borderWidth: 0,
-                        stepped: 'after',
-                        tension: 0,
-                        fill: 'origin',
-                        pointRadius: 0
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            intersect: false,
-                            mode: 'index',
-                            callbacks: {
-                                title: (items) => {
-                                    if (!items.length) return '';
-                                    return new Date(items[0].parsed.x).toLocaleString([], {
-                                        month: 'short', day: 'numeric',
-                                        hour: 'numeric', minute: '2-digit'
-                                    });
-                                },
-                                label: (ctx) => {
-                                    // Only process one dataset — skip the zero-value hit entirely
-                                    if (ctx.parsed.y === 0) return "";
-                        
-                                    const currentX = ctx.parsed.x;
-                                    const period = this._periods.find(p => currentX >= p.startMs && currentX <= p.endMs);
-                                    if (!period) return '';
-                        
-                                    const fmt = (ms) => new Date(ms).toLocaleString([], {
-                                        month: 'short', day: 'numeric',
-                                        hour: 'numeric', minute: '2-digit'
-                                    });
-                        
-                                    const durMs  = period.endMs - period.startMs;
-                                    const hours  = Math.floor(durMs / 3600000);
-                                    const mins   = Math.floor((durMs % 3600000) / 60000);
-                                    const durStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-                        
-                                    const label = period.isConnected ? 'Connected' : 'Disconnected';
-                                    return `${label} — ${fmt(period.startMs)} to ${fmt(period.endMs)} (${durStr})`;
-                                },
-                            }
-                        }
-                },
-                scales: {
-                    x: { type: 'linear', min: startTime, max: endTime, grid: { color: '#27272a' }, ticks: { color: '#64748b', maxTicksLimit: 5, callback: v => new Date(v).toLocaleDateString('en-US', {month:'short', day:'numeric'}) }},
-                    y: { min: -1.05, max: 1.05, ticks: { display: false }, grid: { color: ctx => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a', lineWidth: ctx => ctx.tick.value === 0 ? 4 : 1.5 }}
-                },
-                layout: { padding: { right: 40, left: 20, top: 8, bottom: 8 } }
-            }
-        });
-    
-        setTimeout(() => this.#chartInstance?.resize(), 100);
-
-        canvas.addEventListener('click', (e) => {
-            const chart = this.#chartInstance;
-            if (!chart) return;
-        
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-        
-            // Only fire if click is below the chart plot area (in label zone or below)
-            // Labels render in bottom padding, above xAxis.top
-            if (y < chart.chartArea.bottom - 30) return;  // 30px tolerance above chartArea.bottom
-        
-            const clickedMs = chart.scales.x.getValueForPixel(x);
-            const clickedDate = new Date(clickedMs);
-            const dateStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
-        
-            console.log('[canvas click] drillDown:', dateStr);
-            this.controller.drillDown(dateStr);
-        });
-        
-        canvas.addEventListener('mousemove', (e) => {
-            const chart = this.#chartInstance;
-            if (!chart) return;
-            const rect = canvas.getBoundingClientRect();
-            const y = e.clientY - rect.top;
-            canvas.style.cursor = y > chart.chartArea.bottom - 30 ? 'pointer' : 'default';
-        });
-        
+    #onBack() {
+        const model = this.controller.goBack();
+        if (!model) return;
+        this.model = model;
+        this.#renderHeader();
+        this.#renderChart();
     }
 
     hide() {
-        if (this.#chartInstance) {
-            this.#chartInstance.destroy();
-            this.#chartInstance = null;
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
         }
         super.hide();
     }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = NeonovaSnapshotView;
 }
