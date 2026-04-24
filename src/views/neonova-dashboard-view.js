@@ -183,9 +183,44 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.controller.mountTabView(tableBody);
     
         // Initial state
-        this.applyMinimizedStyles();
+        // Hide content immediately so nothing flashes
         this.contentArea.style.display = 'none';
         this.isMinimized = true;
+        
+        // Kill transitions for the first layout pass
+        const savedTransition = this.panel.style.transition;
+        this.panel.style.transition = 'none';
+        
+        // Apply minimized sizing after the browser has laid out the header,
+        // and again once fonts/images load so we can't get stuck on a stale measurement.
+        const applyWhenReady = () => {
+            if (this.isMinimized) this.applyMinimizedStyles();
+        };
+        
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyWhenReady();
+                // Restore transitions for future user-driven toggles
+                this.panel.style.transition = savedTransition;
+            });
+        });
+        
+        // Re-measure when the header's real size changes (fonts, icons, logo)
+        const ro = new ResizeObserver(() => applyWhenReady());
+        ro.observe(this.header);
+        this.headerResizeObserver = ro;
+        
+        // Also re-run after the logo finishes loading
+        const logoImg = this.header.querySelector('img');
+        if (logoImg && !logoImg.complete) {
+            logoImg.addEventListener('load', applyWhenReady, { once: true });
+            logoImg.addEventListener('error', applyWhenReady, { once: true });
+        }
+        
+        // And after fonts load (Font Awesome shifts button heights)
+        if (document.fonts?.ready) {
+            document.fonts.ready.then(applyWhenReady);
+        }
     
         if (!document.getElementById('neonova-scroll-style')) {
             const style = document.createElement('style');
@@ -297,6 +332,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
             this.toggleMinimize();
         };
         document.addEventListener('click', this.outsideListener);
+
+        window.addEventListener('resize', () => {
+            if (this.isMinimized) this.applyMinimizedStyles();
+        });
     
         this.render();
     }
