@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovaSubscriber - Yearly Snapshot Test
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      1.0
 // @description  Standalone test harness. Fires a 1-year snapshot for one customer.
 // @author       dev-grimnir
 // @match        https://admin.neonova.net/*
@@ -30,7 +30,7 @@
     if (window.name !== 'MAIN') return;
 
     // === CONFIGURE ME ===
-    const USERNAME      = 'radius_username_here';
+    const USERNAME      = 'kandkpepper';
     const FRIENDLY_NAME = 'Display Name';
     // ====================
 
