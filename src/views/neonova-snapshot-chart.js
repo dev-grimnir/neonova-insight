@@ -151,6 +151,12 @@ class NeonovaSnapshotChart {
 
         const periods = this.#buildPeriods(sortedEvents, startTime, endTime);
         const granularity = this.#getGranularity(startTime, endTime);
+
+        console.log('[SnapshotChart] events:', sortedEvents.length,
+                    'periods:', periods.length,
+                    'first period:', periods[0],
+                    'granularity:', granularity);
+
         const tickValues = granularity === 'month' ? this.#monthTickValues(startTime, endTime)
                          : granularity === 'day'   ? this.#dayTickValues(startTime, endTime)
                          :                            this.#hourTickValues(startTime, endTime);
@@ -196,6 +202,7 @@ class NeonovaSnapshotChart {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
+                    decimation: { enabled: false },
                     tooltip: {
                         enabled: true,
                         intersect: false,
