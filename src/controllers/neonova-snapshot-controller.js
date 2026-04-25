@@ -5,27 +5,36 @@
  * Public surface:
  *   static async buildData(username, friendlyName, startDate, endDate)
  *       -> NeonovaSnapshotModel | null
- *   constructor(username, friendlyName, startDate, endDate, ViewClass)
- *       -> immediately fetches and shows the initial snapshot
+ *   static createHeadless(username, friendlyName)
+ *       -> NeonovaSnapshotController (no fetch, no view, no history)
+ *   constructor(username, friendlyName, startDate, endDate)
+ *       -> immediately fetches and shows the modal snapshot
  *   async drillTo(startDate, endDate) -> NeonovaSnapshotModel | null
  *   async goBack() -> NeonovaSnapshotModel | null
  *   canGoBack() -> boolean
+ *   seedHistory(model) -> void  (used by inline callers)
  */
 class NeonovaSnapshotController {
 
-    constructor(username, friendlyName, startDate, endDate, ViewClass = null) {
+    constructor(username, friendlyName, startDate = null, endDate = null) {
         this.username = username;
         this.friendlyName = friendlyName || username;
         this.historyStack = [];
-        this.ViewClass = ViewClass;  // null when controller is used headlessly (inline/report)
         this.view = null;
 
-        // If a view class is supplied, run the modal flow: show spinner, fetch,
-        // swap spinner for view. Inline callers construct via buildData directly
-        // and pass the model into their own view.
-        if (ViewClass) {
+        // Modal flow is the default. Callers that want a headless controller
+        // (report view embedding) should use NeonovaSnapshotController.createHeadless().
+        if (startDate && endDate) {
             this.#loadAndShow(startDate, endDate);
         }
+    }
+
+    /**
+     * Build a controller that does NO fetching and owns NO view.
+     * Caller seeds its history with a model and hands it to an inline view.
+     */
+    static createHeadless(username, friendlyName) {
+        return new NeonovaSnapshotController(username, friendlyName);
     }
 
     /* ============================================================
@@ -80,7 +89,7 @@ class NeonovaSnapshotController {
         }
 
         this.historyStack = [model];
-        this.view = new this.ViewClass(this, model);
+        this.view = new NeonovaSnapshotView(this, model);
         this.view.show();
     }
 
