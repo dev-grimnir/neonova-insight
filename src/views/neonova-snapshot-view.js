@@ -90,7 +90,7 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         const result = NeonovaSnapshotChart.build(
             canvas,
             this.model,
-            (dateStr) => this.#onDayClick(dateStr)
+            (startDate, endDate) => this.#onRangeClick(startDate, endDate)
         );
         this.#chartInstance = result.chart;
     }
@@ -122,23 +122,21 @@ class NeonovaSnapshotView extends NeonovaBaseModalView {
         modalEl?.addEventListener('click', e => { if (e.target === modalEl) this.hide(); });
     }
 
-    async #onDayClick(dateStr) {
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-        const endDate   = new Date(year, month - 1, day, 23, 59, 59, 999);
-
+    async #onRangeClick(startDate, endDate) {
+        const fmt = (d) => d.toLocaleDateString();
         const content = this.modal.querySelector('#snapshot-content');
         if (content) {
             content.innerHTML = `
                 <div class="flex items-center justify-center h-full gap-4">
                     <div class="w-8 h-8 rounded-full border-4 border-zinc-700 border-t-emerald-400 animate-spin"></div>
-                    <span class="text-emerald-400 font-mono text-sm">Loading ${dateStr}...</span>
+                    <span class="text-emerald-400 font-mono text-sm">Loading ${fmt(startDate)} — ${fmt(endDate)}...</span>
                 </div>
             `;
         }
 
         const model = await this.controller.drillTo(startDate, endDate);
         if (!model) {
+            // Drill failed; redraw current model so the user isn't stuck on the spinner.
             this.#render();
             setTimeout(() => this.#initChart(), 150);
             return;
