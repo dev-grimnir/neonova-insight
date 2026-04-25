@@ -1,20 +1,21 @@
 /**
- * Inline snapshot renderer for the report view. Same header content
- * and drill-down semantics as NeonovaSnapshotView, but lives inside
- * a provided container element instead of a modal. No close button —
- * closing is the parent's job.
+ * Inline snapshot view for embedding in the report. Uses the shared
+ * NeonovaSnapshotChart builder so visual behavior matches the modal.
+ * Header content matches the modal's header content; modal chrome is
+ * absent (no Close button — closing is the parent's job).
  *
- * Usage:
- *   const view = new NeonovaReportSnapshotView(controller, model, containerEl);
- *   view.show();
+ * Drill-down semantics match the modal: click in the bottom label zone
+ * to drill into a single day; back button visible whenever the
+ * controller has history to pop.
  */
 class NeonovaReportSnapshotView {
+
+    #chartInstance = null;
 
     constructor(controller, model, containerEl) {
         this.controller = controller;
         this.model = model;
         this.container = containerEl;
-        this.chart = null;
     }
 
     show() {
@@ -22,63 +23,75 @@ class NeonovaReportSnapshotView {
         this.container.innerHTML = `
             <div class="bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
                 <div class="px-8 py-6 border-b border-zinc-700 bg-[#09090b] flex items-center justify-between">
-                    <div id="report-snap-header"></div>
-                    <div>
-                        <button id="report-snap-back-btn" class="px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl items-center gap-2 transition hidden">
-                            <i class="fas fa-arrow-left"></i> Back
+                    <div class="flex items-center gap-4">
+                        <button id="report-snap-back-btn" class="hidden px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
+                            ← Back
                         </button>
+                        <div>
+                            <div class="text-emerald-400 text-xs font-mono tracking-widest" id="report-snap-subtitle">${this.model.friendlyName || 'Customer'} — Connection Timeline</div>
+                            <div class="text-2xl font-semibold text-white mt-1" id="report-snap-daterange">${this.model.getDateRangeString()}</div>
+                            <div class="text-base font-medium text-emerald-400 mt-1" id="report-snap-uptime">Uptime: ${this.model.getUptimePercent()}%</div>
+                        </div>
                     </div>
                 </div>
-                <div class="p-6">
-                    <div style="height: 480px;"><canvas id="report-snap-canvas"></canvas></div>
+                <div id="report-snap-body" class="p-6">
+                    <div style="height: 620px; min-height: 620px;">
+                        <canvas id="report-snap-canvas"></canvas>
+                    </div>
                 </div>
             </div>
         `;
-        this.#renderHeader();
-        this.#renderChart();
+
         this.#attachListeners();
+        setTimeout(() => this.#initChart(), 150);
     }
 
     /* ============================================================
      *  RENDER
      * ============================================================ */
 
-    #renderHeader() {
-        const header = this.container.querySelector('#report-snap-header');
-        if (!header) return;
-        const m = this.model;
-        header.innerHTML = `
-            <div class="text-emerald-400 text-xs font-mono tracking-widest">CONNECTION TIMELINE</div>
-            <div class="text-lg font-semibold text-white mt-1">${m.startDate.toLocaleString()} — ${m.endDate.toLocaleString()}</div>
-            <div class="text-sm text-emerald-400 mt-1">Uptime: ${Number(m.metrics.percentConnected || 0).toFixed(1)}%</div>
+    #renderBody() {
+        const body = this.container.querySelector('#report-snap-body');
+        if (!body) return;
+        body.innerHTML = `
+            <div style="height: 620px; min-height: 620px;">
+                <canvas id="report-snap-canvas"></canvas>
+            </div>
         `;
-        this.#updateBackButtonVisibility();
+
+        if (!this.model.events || this.model.events.length < 2) {
+            body.innerHTML += `<div class="text-center text-zinc-400 py-12 text-lg">No connection events found for this period.</div>`;
+        }
     }
 
-    #renderChart() {
-        if (this.chart) {
-            this.chart.destroy();
-            this.chart = null;
-        }
+    #initChart() {
         const canvas = this.container.querySelector('#report-snap-canvas');
         if (!canvas) return;
-        this.chart = NeonovaSnapshotChart.build(
+
+        if (this.#chartInstance) {
+            this.#chartInstance.destroy();
+            this.#chartInstance = null;
+        }
+
+        const result = NeonovaSnapshotChart.build(
             canvas,
             this.model,
-            (start, end) => this.#onRangeClick(start, end)
+            (dateStr) => this.#onDayClick(dateStr)
         );
+        this.#chartInstance = result.chart;
     }
 
-    #updateBackButtonVisibility() {
-        const btn = this.container.querySelector('#report-snap-back-btn');
-        if (!btn) return;
-        if (this.controller.canGoBack()) {
-            btn.classList.remove('hidden');
-            btn.classList.add('flex');
-        } else {
-            btn.classList.add('hidden');
-            btn.classList.remove('flex');
-        }
+    #updateHeader() {
+        const subtitle  = this.container.querySelector('#report-snap-subtitle');
+        const daterange = this.container.querySelector('#report-snap-daterange');
+        const uptime    = this.container.querySelector('#report-snap-uptime');
+        const backBtn   = this.container.querySelector('#report-snap-back-btn');
+
+        if (subtitle)  subtitle.textContent  = `${this.model.friendlyName || 'Customer'} — Connection Timeline`;
+        if (daterange) daterange.textContent = this.model.getDateRangeString();
+        if (uptime)    uptime.textContent    = `Uptime: ${this.model.getUptimePercent()}%`;
+
+        if (backBtn) backBtn.classList.toggle('hidden', !this.controller.canGoBack());
     }
 
     /* ============================================================
@@ -90,29 +103,46 @@ class NeonovaReportSnapshotView {
         backBtn?.addEventListener('click', () => this.#onBack());
     }
 
-    async #onRangeClick(startDate, endDate) {
+    async #onDayClick(dateStr) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const endDate   = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+        const body = this.container.querySelector('#report-snap-body');
+        if (body) {
+            body.innerHTML = `
+                <div class="flex items-center justify-center gap-4 py-20">
+                    <div class="w-8 h-8 rounded-full border-4 border-zinc-700 border-t-emerald-400 animate-spin"></div>
+                    <span class="text-emerald-400 font-mono text-sm">Loading ${dateStr}...</span>
+                </div>
+            `;
+        }
+
         const model = await this.controller.drillTo(startDate, endDate);
         if (!model) {
-            alert('No data for that range.');
+            this.#renderBody();
+            setTimeout(() => this.#initChart(), 150);
             return;
         }
         this.model = model;
-        this.#renderHeader();
-        this.#renderChart();
+        this.#updateHeader();
+        this.#renderBody();
+        setTimeout(() => this.#initChart(), 150);
     }
 
     #onBack() {
         const model = this.controller.goBack();
         if (!model) return;
         this.model = model;
-        this.#renderHeader();
-        this.#renderChart();
+        this.#updateHeader();
+        this.#renderBody();
+        setTimeout(() => this.#initChart(), 150);
     }
 
     destroy() {
-        if (this.chart) {
-            this.chart.destroy();
-            this.chart = null;
+        if (this.#chartInstance) {
+            this.#chartInstance.destroy();
+            this.#chartInstance = null;
         }
         if (this.container) {
             this.container.innerHTML = '';
