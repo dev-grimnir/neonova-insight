@@ -156,5 +156,5 @@ class NeonovaSnapshotController {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = NeonovaSnapshotController;
+    module.exports = NeonovaSnapshotChart;
 }
