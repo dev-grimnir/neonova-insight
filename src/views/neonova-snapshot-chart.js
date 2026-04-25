@@ -3,17 +3,138 @@
  * NeonovaReportSnapshotView (inline). Views are dumb — they call
  * build() with a canvas, a model, and a click callback.
  *
- * Ported from the original NeonovaSnapshotView#initChart so behavior
- * matches the established modal chart 1:1. Both views now share this.
+ * Visual style ported from original NeonovaSnapshotView#initChart.
+ * Tick density scales with range (month / day / hour) instead of
+ * the original's fixed maxTicksLimit: 5, so 11-month charts get
+ * monthly labels and become useful click targets.
  */
 class NeonovaSnapshotChart {
+
+    static #MS_PER_DAY = 86400000;
+    static #MONTH_THRESHOLD_DAYS = 60;
+
+    /* ============================================================
+     *  GRANULARITY + TICKS
+     * ============================================================ */
+
+    static #getGranularity(startMs, endMs) {
+        const days = (endMs - startMs) / this.#MS_PER_DAY;
+        if (days >= this.#MONTH_THRESHOLD_DAYS) return 'month';
+        if (days > 1.01) return 'day';
+        return 'hour';
+    }
+
+    static #monthTickValues(startMs, endMs) {
+        const ticks = [];
+        const start = new Date(startMs);
+        let year  = start.getFullYear();
+        let month = start.getMonth();
+        // First tick: the 1st of the month at/after startMs
+        if (start.getDate() !== 1 || start.getHours() !== 0 || start.getMinutes() !== 0) {
+            month++;
+            if (month > 11) { month = 0; year++; }
+        }
+        while (true) {
+            const t = new Date(year, month, 1, 0, 0, 0, 0).getTime();
+            if (t > endMs) break;
+            ticks.push(t);
+            month++;
+            if (month > 11) { month = 0; year++; }
+        }
+        return ticks;
+    }
+
+    static #dayTickValues(startMs, endMs) {
+        const ticks = [];
+        const cursor = new Date(startMs);
+        cursor.setHours(0, 0, 0, 0);
+        if (cursor.getTime() < startMs) cursor.setDate(cursor.getDate() + 1);
+        while (cursor.getTime() <= endMs) {
+            ticks.push(cursor.getTime());
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return ticks;
+    }
+
+    static #hourTickValues(startMs, endMs) {
+        const ticks = [];
+        const cursor = new Date(startMs);
+        cursor.setMinutes(0, 0, 0);
+        if (cursor.getTime() < startMs) cursor.setHours(cursor.getHours() + 1);
+        while (cursor.getTime() <= endMs) {
+            ticks.push(cursor.getTime());
+            cursor.setHours(cursor.getHours() + 1);
+        }
+        return ticks;
+    }
+
+    static #formatTick(ms, granularity) {
+        const d = new Date(ms);
+        if (granularity === 'month') {
+            return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+        }
+        if (granularity === 'day') {
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+        return `${d.getHours().toString().padStart(2, '0')}:00`;
+    }
+
+    /* ============================================================
+     *  PERIOD BUILDING
+     * ============================================================ */
+
+    /**
+     * Group consecutive same-state events into periods. The first period
+     * is anchored at startTime regardless of when the first real event
+     * is, so the chart fills its full x-range without diagonals. The
+     * synthetic anchor inherits the inverse of the first real event's
+     * status (if first event is "Start"/connected, prior state was down).
+     */
+    static #buildPeriods(sortedEvents, startTime, endTime) {
+        const periods = [];
+        if (sortedEvents.length === 0) return periods;
+
+        // Synthesize an opening event at chart start if the first real event
+        // is later. This forces the first period to begin at startTime.
+        const events = [...sortedEvents];
+        const firstRealMs = events[0].dateObj.getTime();
+        if (firstRealMs > startTime) {
+            const firstIsConnected = (events[0].status === 'Start' || events[0].status === 'connected');
+            events.unshift({
+                dateObj: new Date(startTime),
+                status: firstIsConnected ? 'Stop' : 'Start'
+            });
+        }
+
+        let i = 0;
+        while (i < events.length) {
+            const isConnected = (events[i].status === 'Start' || events[i].status === 'connected');
+            const startMs = events[i].dateObj.getTime();
+
+            let j = i + 1;
+            while (j < events.length &&
+                   ((events[j].status === 'Start' || events[j].status === 'connected') === isConnected)) {
+                j++;
+            }
+
+            const endMs = j < events.length
+                ? events[j].dateObj.getTime() - 1
+                : endTime;
+
+            periods.push({ startMs, endMs, isConnected });
+            i = j;
+        }
+        return periods;
+    }
+
+    /* ============================================================
+     *  PUBLIC BUILD
+     * ============================================================ */
 
     /**
      * @param {HTMLCanvasElement} canvas
      * @param {NeonovaSnapshotModel} model
      * @param {(dateStr: string) => void} onDayClick
-     *        Called with a YYYY-MM-DD string when the user clicks the
-     *        bottom label zone. The view forwards this to its controller.
      * @returns {{ chart: Chart, periods: Array }}
      */
     static build(canvas, model, onDayClick) {
@@ -25,45 +146,11 @@ class NeonovaSnapshotChart {
         const startTime = model.startDate.getTime();
         const endTime   = model.endDate.getTime();
 
-        // If the first real event is after the chart range start, prepend a
-        // synthetic boundary event so the first period covers from start.
-        // Without this, Chart.js draws a diagonal line from (startTime, 0) up
-        // to the first real point. The synthetic event's status is the inverse
-        // of the first real event — if the first event is "Start" (came up),
-        // we were down before; if it's "Stop" (went down), we were up before.
-        if (sortedEvents.length > 0) {
-            const first = sortedEvents[0];
-            if (first.dateObj.getTime() > startTime) {
-                const inverseStatus = (first.status === 'Start' || first.status === 'connected')
-                    ? 'Stop'
-                    : 'Start';
-                sortedEvents.unshift({
-                    dateObj: new Date(startTime),
-                    status: inverseStatus
-                });
-            }
-        }
-
-        // Build periods FIRST — single source of truth for tooltip
-        const periods = [];
-        let i = 0;
-        while (i < sortedEvents.length) {
-            const isConnected = (sortedEvents[i].status === 'Start' || sortedEvents[i].status === 'connected');
-            const startMs = sortedEvents[i].dateObj.getTime();
-
-            let j = i + 1;
-            while (j < sortedEvents.length &&
-                   (sortedEvents[j].status === 'Start' || sortedEvents[j].status === 'connected') === isConnected) {
-                j++;
-            }
-
-            const endMs = j < sortedEvents.length
-                ? sortedEvents[j].dateObj.getTime() - 1
-                : endTime;
-
-            periods.push({ startMs, endMs, isConnected });
-            i = j;
-        }
+        const periods = this.#buildPeriods(sortedEvents, startTime, endTime);
+        const granularity = this.#getGranularity(startTime, endTime);
+        const tickValues = granularity === 'month' ? this.#monthTickValues(startTime, endTime)
+                         : granularity === 'day'   ? this.#dayTickValues(startTime, endTime)
+                         :                            this.#hourTickValues(startTime, endTime);
 
         // Build chart points from periods (two points each = no diagonals)
         const rawPeriods = [];
@@ -149,13 +236,16 @@ class NeonovaSnapshotChart {
                         grid: { color: '#27272a' },
                         ticks: {
                             color: '#64748b',
-                            maxTicksLimit: 5,
-                            callback: v => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            autoSkip: false,
+                            callback: (value) => this.#formatTick(value, granularity)
+                        },
+                        afterBuildTicks: (axis) => {
+                            axis.ticks = tickValues.map(v => ({ value: v }));
                         }
                     },
                     y: {
-                        min: -1.2,
-                        max: 1.2,
+                        min: -3,
+                        max: 3,
                         ticks: { display: false },
                         grid: {
                             color: ctx => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
