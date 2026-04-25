@@ -262,30 +262,32 @@ class NeonovaSnapshotChart {
                         display: false,
                         grid: { display: false }
                     }
-                },
-                onClick: (evt, _elements, c) => {
-                    console.log('[SnapshotChart] click fired, granularity:', granularity);
-                    if (!onRangeClick || granularity === 'hour') return;
-                    const xScale = c.scales.x;
-                    let px = evt.x;
-                    if (px == null && evt.native) {
-                        const rect = canvas.getBoundingClientRect();
-                        px = evt.native.clientX - rect.left;
-                    }
-                    console.log('[SnapshotChart] px:', px);
-                    if (px == null) return;
-                    const ms = xScale.getValueForPixel(px);
-                    console.log('[SnapshotChart] ms:', ms, new Date(ms));
-                    if (ms == null || isNaN(ms)) return;
-                    const resolved = this.#resolveClickRange(ms, granularity, start, end);
-                    console.log('[SnapshotChart] resolved range:', resolved);
-                    if (!resolved) return;
-                    onRangeClick(resolved[0], resolved[1]);
                 }
             }
         });
 
         canvas.style.cursor = granularity === 'hour' ? 'default' : 'pointer';
+
+        // Chart.js's onClick option only fires when a data element (point/bar) is hit.
+        // Stepped lines with pointRadius:0 have nothing to hit, so we listen on the
+        // canvas directly. Same coordinate math, more reliable.
+        if (onRangeClick && granularity !== 'hour') {
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const px = e.clientX - rect.left;
+                console.log('[SnapshotChart] click fired, granularity:', granularity, 'px:', px);
+                const xScale = chart.scales.x;
+                if (!xScale) return;
+                const ms = xScale.getValueForPixel(px);
+                console.log('[SnapshotChart] ms:', ms, ms ? new Date(ms) : null);
+                if (ms == null || isNaN(ms)) return;
+                const resolved = this.#resolveClickRange(ms, granularity, start, end);
+                console.log('[SnapshotChart] resolved range:', resolved);
+                if (!resolved) return;
+                onRangeClick(resolved[0], resolved[1]);
+            });
+        }
+
         return chart;
     }
 }
