@@ -134,10 +134,13 @@ class NeonovaSnapshotChart {
     /**
      * @param {HTMLCanvasElement} canvas
      * @param {NeonovaSnapshotModel} model
-     * @param {(dateStr: string) => void} onDayClick
+     * @param {(startDate: Date, endDate: Date) => void} onRangeClick
+     *        Called when the user clicks a tick label. Range matches the
+     *        current display granularity (a month for long-range charts,
+     *        a day for short-range). Not called on hour-grained charts.
      * @returns {{ chart: Chart, periods: Array }}
      */
-    static build(canvas, model, onDayClick) {
+    static build(canvas, model, onRangeClick) {
         const events = (model.getEvents ? model.getEvents() : model.events) || [];
         const sortedEvents = [...events].sort((a, b) =>
             (a.dateObj || new Date(0)) - (b.dateObj || new Date(0))
@@ -170,7 +173,7 @@ class NeonovaSnapshotChart {
                         borderColor: '#10b981',
                         backgroundColor: '#10b98188',
                         borderWidth: 0,
-                        stepped: 'after',
+                        stepped: 'before',
                         tension: 0,
                         fill: 'origin',
                         pointRadius: 0
@@ -181,7 +184,7 @@ class NeonovaSnapshotChart {
                         borderColor: '#ef4444',
                         backgroundColor: '#ef444488',
                         borderWidth: 0,
-                        stepped: 'after',
+                        stepped: 'before',
                         tension: 0,
                         fill: 'origin',
                         pointRadius: 0
@@ -259,9 +262,13 @@ class NeonovaSnapshotChart {
 
         setTimeout(() => chart?.resize(), 100);
 
-        // Click in the bottom label zone to drill down to a single day.
+        // Click in the bottom label zone to drill down. The drill range
+        // matches the current display granularity: clicking a month label on
+        // an 11-month chart drills into that month; clicking a day label on
+        // a 30-day chart drills into that day. Hour-grained charts are
+        // terminal — no drill.
         canvas.addEventListener('click', (e) => {
-            if (!onDayClick) return;
+            if (!onRangeClick || granularity === 'hour') return;
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -270,14 +277,34 @@ class NeonovaSnapshotChart {
 
             const clickedMs = chart.scales.x.getValueForPixel(x);
             if (clickedMs == null || isNaN(clickedMs)) return;
-            const d = new Date(clickedMs);
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            onDayClick(dateStr);
+
+            const clicked = new Date(clickedMs);
+            let drillStart, drillEnd;
+
+            if (granularity === 'month') {
+                drillStart = new Date(clicked.getFullYear(), clicked.getMonth(), 1, 0, 0, 0, 0);
+                drillEnd   = new Date(clicked.getFullYear(), clicked.getMonth() + 1, 1, 0, 0, 0, 0);
+                drillEnd   = new Date(drillEnd.getTime() - 1);
+                // Clip to chart range so the first/last partial month
+                // doesn't drill into nonexistent days.
+                if (drillStart.getTime() < startTime) drillStart = new Date(startTime);
+                if (drillEnd.getTime()   > endTime)   drillEnd   = new Date(endTime);
+            } else {
+                // day granularity
+                drillStart = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
+                drillEnd   = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 23, 59, 59, 999);
+            }
+
+            onRangeClick(drillStart, drillEnd);
         });
 
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const y = e.clientY - rect.top;
+            if (granularity === 'hour') {
+                canvas.style.cursor = 'default';
+                return;
+            }
             canvas.style.cursor = y > chart.chartArea.bottom - 30 ? 'pointer' : 'default';
         });
 
