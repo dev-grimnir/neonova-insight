@@ -263,13 +263,19 @@ class NeonovaSnapshotChart {
                         grid: { display: false }
                     }
                 },
-                onClick: (evt) => {
+                onClick: (evt, _elements, c) => {
                     if (!onRangeClick || granularity === 'hour') return;
-                    const xScale = chart.scales.x;
-                    const rect = canvas.getBoundingClientRect();
-                    const px = evt.native.clientX - rect.left;
+                    const xScale = c.scales.x;
+                    // Chart.js v4 passes event with local x/y coords already computed.
+                    // Fall back to native clientX if x isn't present for some reason.
+                    let px = evt.x;
+                    if (px == null && evt.native) {
+                        const rect = canvas.getBoundingClientRect();
+                        px = evt.native.clientX - rect.left;
+                    }
+                    if (px == null) return;
                     const ms = xScale.getValueForPixel(px);
-                    if (ms == null) return;
+                    if (ms == null || isNaN(ms)) return;
                     const resolved = this.#resolveClickRange(ms, granularity, start, end);
                     if (!resolved) return;
                     onRangeClick(resolved[0], resolved[1]);
