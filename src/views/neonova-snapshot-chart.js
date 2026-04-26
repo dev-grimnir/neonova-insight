@@ -3,10 +3,13 @@
  * NeonovaReportSnapshotView (inline). Views are dumb — they call
  * build() with a canvas, a model, and a click callback.
  *
- * Visual style ported from original NeonovaSnapshotView#initChart.
- * Tick density scales with range (month / day / hour) instead of
- * the original's fixed maxTicksLimit: 5, so 11-month charts get
- * monthly labels and become useful click targets.
+ * Single-dataset architecture: one line that steps between y=+1 (connected)
+ * and y=-1 (disconnected), with fill split above/below origin (green above,
+ * red below). This eliminates the dual-dataset interpolation artifacts that
+ * produced phantom diagonals on dense long-range charts.
+ *
+ * Tick density scales with range: month / day / hour. Click in the bottom
+ * tick-label strip drills to the matching range granularity.
  */
 class NeonovaSnapshotChart {
 
@@ -29,7 +32,6 @@ class NeonovaSnapshotChart {
         const start = new Date(startMs);
         let year  = start.getFullYear();
         let month = start.getMonth();
-        // First tick: the 1st of the month at/after startMs
         if (start.getDate() !== 1 || start.getHours() !== 0 || start.getMinutes() !== 0) {
             month++;
             if (month > 11) { month = 0; year++; }
@@ -84,41 +86,26 @@ class NeonovaSnapshotChart {
      * ============================================================ */
 
     /**
-     * Group consecutive same-state events into periods. The first period
-     * is anchored at startTime regardless of when the first real event
-     * is, so the chart fills its full x-range without diagonals. The
-     * synthetic anchor inherits the inverse of the first real event's
-     * status (if first event is "Start"/connected, prior state was down).
+     * Group consecutive same-state events into periods. Each period
+     * carries its start/end timestamps and connected flag.
      */
-    static #buildPeriods(sortedEvents, startTime, endTime) {
+    static #buildPeriods(sortedEvents, endTime) {
         const periods = [];
         if (sortedEvents.length === 0) return periods;
 
-        // Synthesize an opening event at chart start if the first real event
-        // is later. This forces the first period to begin at startTime.
-        const events = [...sortedEvents];
-        const firstRealMs = events[0].dateObj.getTime();
-        if (firstRealMs > startTime) {
-            const firstIsConnected = (events[0].status === 'Start' || events[0].status === 'connected');
-            events.unshift({
-                dateObj: new Date(startTime),
-                status: firstIsConnected ? 'Stop' : 'Start'
-            });
-        }
-
         let i = 0;
-        while (i < events.length) {
-            const isConnected = (events[i].status === 'Start' || events[i].status === 'connected');
-            const startMs = events[i].dateObj.getTime();
+        while (i < sortedEvents.length) {
+            const isConnected = (sortedEvents[i].status === 'Start' || sortedEvents[i].status === 'connected');
+            const startMs = sortedEvents[i].dateObj.getTime();
 
             let j = i + 1;
-            while (j < events.length &&
-                   ((events[j].status === 'Start' || events[j].status === 'connected') === isConnected)) {
+            while (j < sortedEvents.length &&
+                   ((sortedEvents[j].status === 'Start' || sortedEvents[j].status === 'connected') === isConnected)) {
                 j++;
             }
 
-            const endMs = j < events.length
-                ? events[j].dateObj.getTime() - 1
+            const endMs = j < sortedEvents.length
+                ? sortedEvents[j].dateObj.getTime()
                 : endTime;
 
             periods.push({ startMs, endMs, isConnected });
@@ -135,9 +122,6 @@ class NeonovaSnapshotChart {
      * @param {HTMLCanvasElement} canvas
      * @param {NeonovaSnapshotModel} model
      * @param {(startDate: Date, endDate: Date) => void} onRangeClick
-     *        Called when the user clicks a tick label. Range matches the
-     *        current display granularity (a month for long-range charts,
-     *        a day for short-range). Not called on hour-grained charts.
      * @returns {{ chart: Chart, periods: Array }}
      */
     static build(canvas, model, onRangeClick) {
@@ -149,53 +133,39 @@ class NeonovaSnapshotChart {
         const startTime = model.startDate.getTime();
         const endTime   = model.endDate.getTime();
 
-        const periods = this.#buildPeriods(sortedEvents, startTime, endTime);
+        const periods = this.#buildPeriods(sortedEvents, endTime);
         const granularity = this.#getGranularity(startTime, endTime);
-
-        console.log('[SnapshotChart] events:', sortedEvents.length,
-                    'periods:', periods.length,
-                    'first period:', periods[0],
-                    'granularity:', granularity);
-
         const tickValues = granularity === 'month' ? this.#monthTickValues(startTime, endTime)
                          : granularity === 'day'   ? this.#dayTickValues(startTime, endTime)
                          :                            this.#hourTickValues(startTime, endTime);
 
-        // Build chart points from periods (two points each = no diagonals)
-        const rawPeriods = [];
+        // ONE dataset. Each period contributes two points at the same y value
+        // (start and end of the period). Stepped 'before' draws right angles
+        // between periods. The fill is split above/below origin.
+        const data = [];
         periods.forEach(p => {
             const y = p.isConnected ? 1 : -1;
-            rawPeriods.push({ x: p.startMs, y });
-            rawPeriods.push({ x: p.endMs,   y });
+            data.push({ x: p.startMs, y });
+            data.push({ x: p.endMs,   y });
         });
 
         const chart = new Chart(canvas, {
             type: 'line',
             data: {
-                datasets: [
-                    {
-                        label: 'Connected',
-                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y > 0 ? 1 : 0 })),
-                        borderColor: '#10b981',
-                        backgroundColor: '#10b98188',
-                        borderWidth: 0,
-                        stepped: 'before',
-                        tension: 0,
-                        fill: 'origin',
-                        pointRadius: 0
-                    },
-                    {
-                        label: 'Disconnected',
-                        data: rawPeriods.map(pt => ({ x: pt.x, y: pt.y < 0 ? -1 : 0 })),
-                        borderColor: '#ef4444',
-                        backgroundColor: '#ef444488',
-                        borderWidth: 0,
-                        stepped: 'before',
-                        tension: 0,
-                        fill: 'origin',
-                        pointRadius: 0
+                datasets: [{
+                    label: 'Connection',
+                    data,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    stepped: 'before',
+                    tension: 0,
+                    pointRadius: 0,
+                    fill: {
+                        target: 'origin',
+                        above: '#10b98188',  // green when y > 0
+                        below: '#ef444488'   // red when y < 0
                     }
-                ]
+                }]
             },
             options: {
                 responsive: true,
@@ -216,8 +186,6 @@ class NeonovaSnapshotChart {
                                 });
                             },
                             label: (ctx) => {
-                                if (ctx.parsed.y === 0) return '';
-
                                 const currentX = ctx.parsed.x;
                                 const period = periods.find(p => currentX >= p.startMs && currentX <= p.endMs);
                                 if (!period) return '';
@@ -269,17 +237,13 @@ class NeonovaSnapshotChart {
 
         setTimeout(() => chart?.resize(), 100);
 
-        // Click in the bottom label zone to drill down. The drill range
-        // matches the current display granularity: clicking a month label on
-        // an 11-month chart drills into that month; clicking a day label on
-        // a 30-day chart drills into that day. Hour-grained charts are
-        // terminal — no drill.
+        // Click in bottom tick-label strip to drill down. Range matches
+        // current granularity: month / day. Hour is terminal.
         canvas.addEventListener('click', (e) => {
             if (!onRangeClick || granularity === 'hour') return;
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-
             if (y < chart.chartArea.bottom - 30) return;
 
             const clickedMs = chart.scales.x.getValueForPixel(x);
@@ -292,12 +256,9 @@ class NeonovaSnapshotChart {
                 drillStart = new Date(clicked.getFullYear(), clicked.getMonth(), 1, 0, 0, 0, 0);
                 drillEnd   = new Date(clicked.getFullYear(), clicked.getMonth() + 1, 1, 0, 0, 0, 0);
                 drillEnd   = new Date(drillEnd.getTime() - 1);
-                // Clip to chart range so the first/last partial month
-                // doesn't drill into nonexistent days.
                 if (drillStart.getTime() < startTime) drillStart = new Date(startTime);
                 if (drillEnd.getTime()   > endTime)   drillEnd   = new Date(endTime);
             } else {
-                // day granularity
                 drillStart = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
                 drillEnd   = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 23, 59, 59, 999);
             }
