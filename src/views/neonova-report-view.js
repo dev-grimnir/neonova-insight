@@ -20,6 +20,7 @@ class NeonovaReportView extends NeonovaBaseModalView {
                         <div>
                             <div class="text-${this.accent}-400 text-xs font-mono tracking-widest">RADIUS CONNECTION REPORT</div>
                             <div class="text-3xl font-semibold text-white mt-1">${this.friendlyName || this.username}</div>
+                            <div class="text-sm text-zinc-400 mt-1">${this.metrics.monitoringPeriod || 'N/A'}</div>
                         </div>
                         <button id="close-report-btn" class="px-6 py-2.5 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl flex items-center gap-2 transition">
                             <i class="fas fa-times"></i> Close
@@ -130,18 +131,8 @@ class NeonovaReportView extends NeonovaBaseModalView {
 
         return `
             <div class="max-w-6xl mx-auto">
-                <h1 class="text-5xl font-bold text-white text-center tracking-tight">RADIUS Connection Report</h1>
-                <p class="text-${this.accent}-400 text-center text-2xl mt-2 mb-3">${this.friendlyName || this.username}</p>
-                <p class="text-center text-zinc-400 mb-12">
-                    Monitoring period: ${this.metrics.monitoringPeriod || 'N/A'}
-                    (${Number(this.metrics.daysSpanned || 0).toFixed(1)} days,
-                    ${this.metrics.totalResultsCounted || 0} total results counted,
-                    ${this.metrics.ignoredAsDuplicates || 0} ignored as duplicates)
-                </p>
-
-                <!-- Inline snapshot (replaces old score cards) -->
+                <!-- Inline snapshot -->
                 <div class="mb-12">
-                    <h2 class="text-3xl font-semibold text-white mb-6">Connection Timeline</h2>
                     <div id="inline-snapshot-slot"></div>
                 </div>
 
