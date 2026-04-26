@@ -139,14 +139,22 @@ class NeonovaSnapshotChart {
                          : granularity === 'day'   ? this.#dayTickValues(startTime, endTime)
                          :                            this.#hourTickValues(startTime, endTime);
 
-        // ONE dataset. Each period contributes two points at the same y value
-        // (start and end of the period). Stepped 'before' draws right angles
-        // between periods. The fill is split above/below origin.
+        // ONE dataset. Each period is two points at the same y, separated
+        // from the next period by a NaN-y point. Chart.js treats NaN y as
+        // a discontinuity — it ends the current fill segment and starts a
+        // new one. This prevents the fill renderer from drawing transitional
+        // polygons that leak the wrong color across the origin axis when a
+        // period transitions from +1 to -1.
         const data = [];
-        periods.forEach(p => {
+        periods.forEach((p, idx) => {
             const y = p.isConnected ? 1 : -1;
             data.push({ x: p.startMs, y });
             data.push({ x: p.endMs,   y });
+            // Discontinuity between periods. The NaN point's x sits at the
+            // boundary so the next period picks up exactly where this one ends.
+            if (idx < periods.length - 1) {
+                data.push({ x: p.endMs, y: NaN });
+            }
         });
 
         const chart = new Chart(canvas, {
@@ -160,6 +168,7 @@ class NeonovaSnapshotChart {
                     stepped: 'before',
                     tension: 0,
                     pointRadius: 0,
+                    spanGaps: false,
                     fill: {
                         target: 'origin',
                         above: '#10b98188',  // green when y > 0
