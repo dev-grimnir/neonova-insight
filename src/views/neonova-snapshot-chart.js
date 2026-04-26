@@ -114,6 +114,56 @@ class NeonovaSnapshotChart {
         return periods;
     }
 
+    /**
+     * Collapse periods that are below the visible pixel threshold into
+     * aggregated runs. At 1200px wide across 11 months, each pixel covers
+     * ~6.6 hours — anything shorter is invisible anyway. Aggregation
+     * preserves visual accuracy while keeping render volume manageable.
+     *
+     * Strategy: scan periods in order. If the current period is shorter
+     * than minMs, merge it with adjacent short periods into a single
+     * aggregate whose state is determined by total duration of each side.
+     */
+    static #aggregatePeriods(periods, minMs) {
+        if (periods.length === 0) return periods;
+
+        const out = [];
+        let i = 0;
+        while (i < periods.length) {
+            const p = periods[i];
+            const dur = p.endMs - p.startMs;
+
+            if (dur >= minMs) {
+                out.push(p);
+                i++;
+                continue;
+            }
+
+            // Walk forward absorbing periods until we have a chunk >= minMs
+            let chunkStart = p.startMs;
+            let chunkEnd = p.endMs;
+            let connectedMs = p.isConnected ? dur : 0;
+            let disconnectedMs = p.isConnected ? 0 : dur;
+            let j = i + 1;
+            while (j < periods.length && (chunkEnd - chunkStart) < minMs) {
+                const q = periods[j];
+                const qDur = q.endMs - q.startMs;
+                chunkEnd = q.endMs;
+                if (q.isConnected) connectedMs += qDur;
+                else               disconnectedMs += qDur;
+                j++;
+            }
+
+            out.push({
+                startMs: chunkStart,
+                endMs:   chunkEnd,
+                isConnected: connectedMs >= disconnectedMs
+            });
+            i = j;
+        }
+        return out;
+    }
+
     /* ============================================================
      *  PUBLIC BUILD
      * ============================================================ */
@@ -133,8 +183,18 @@ class NeonovaSnapshotChart {
         const startTime = model.startDate.getTime();
         const endTime   = model.endDate.getTime();
 
-        const periods = this.#buildPeriods(sortedEvents, endTime);
+        const rawPeriods = this.#buildPeriods(sortedEvents, endTime);
         const granularity = this.#getGranularity(startTime, endTime);
+
+        // Estimate the canvas's visible pixel width. We don't have it before
+        // the chart mounts, so use the canvas's CSS size or fall back to 1200.
+        const canvasWidth = canvas.clientWidth || canvas.width || 1200;
+        const rangeMs = endTime - startTime;
+        const msPerPixel = rangeMs / canvasWidth;
+        // Aggregate periods narrower than half a pixel — invisible anyway.
+        const minVisibleMs = msPerPixel * 0.5;
+        const periods = this.#aggregatePeriods(rawPeriods, minVisibleMs);
+
         const tickValues = granularity === 'month' ? this.#monthTickValues(startTime, endTime)
                          : granularity === 'day'   ? this.#dayTickValues(startTime, endTime)
                          :                            this.#hourTickValues(startTime, endTime);
