@@ -1,5 +1,5 @@
 class NeonovaCustomerModel {
-    static RETENTION_MS = 24 * 60 * 60 * 1000;
+    static RETENTION_MS = 24 * 60 * 60 * 1000;   // 24h buffer window
 
     constructor(radiusUsername, friendlyName = '', initialState = null) {
         const state = initialState || {};
@@ -10,15 +10,23 @@ class NeonovaCustomerModel {
         this.lastUpdate = state.lastUpdate || new Date().toLocaleString();
         this.lastEventTime = state.lastEventTime ? new Date(state.lastEventTime) : null;
 
-        this.eventHistory = [];
-        if (Array.isArray(state.eventHistory)) {
-            for (const e of state.eventHistory) {
-                const d = new Date(e.dateObj);
-                if (!isNaN(d.getTime())) {
-                    this.eventHistory.push({ dateObj: d, status: e.status });
-                }
-            }
-        }
+        // === Notification state ===
+        // disconnectedSince: ms timestamp of when this modem was first observed Disconnected
+        //                    in the current down event. null if currently Connected.
+        // lastAlertSent:     ms timestamp of when an alert was actually fired for the current
+        //                    down event. null if no alert sent (yet, or never crossed threshold).
+        // alertsSuppressed:  user toggle — when true, this modem never triggers alerts
+        //                    regardless of tab/threshold state.
+        this.disconnectedSince = (typeof state.disconnectedSince === 'number') ? state.disconnectedSince : null;
+        this.lastAlertSent     = (typeof state.lastAlertSent === 'number')     ? state.lastAlertSent     : null;
+        this.alertsSuppressed  = state.alertsSuppressed === true;
+
+        // Rehydrate buffer from persisted state
+        this.eventHistory = Array.isArray(state.eventHistory)
+            ? state.eventHistory
+                .map(e => ({ dateObj: new Date(e.dateObj), status: e.status }))
+                .filter(e => !isNaN(e.dateObj.getTime()))
+            : [];
     }
 
     getDurationStr() {
@@ -53,24 +61,43 @@ class NeonovaCustomerModel {
         this.lastUpdate = new Date().toLocaleString();
     }
 
+    // ─── Notification state helpers ────────────────────────────────
+    markDisconnected(now = Date.now()) {
+        this.disconnectedSince = now;
+        this.lastAlertSent = null;
+    }
+
+    markAlerted(now = Date.now()) {
+        this.lastAlertSent = now;
+    }
+
+    markReconnected() {
+        this.disconnectedSince = null;
+        this.lastAlertSent = null;
+    }
+
+    toggleAlertsSuppressed() {
+        this.alertsSuppressed = !this.alertsSuppressed;
+        return this.alertsSuppressed;
+    }
+
     ingestEvents(events) {
         if (!Array.isArray(events) || events.length === 0) return;
 
-        const normalized = [];
-        for (const e of events) {
-            const d = e.dateObj instanceof Date ? e.dateObj : new Date(e.dateObj);
-            if (!isNaN(d.getTime())) {
-                normalized.push({ dateObj: d, status: e.status });
-            }
-        }
+        const normalized = events
+            .map(e => ({
+                dateObj: e.dateObj instanceof Date ? e.dateObj : new Date(e.dateObj),
+                status: e.status
+            }))
+            .filter(e => !isNaN(e.dateObj.getTime()));
 
         const merged = this.eventHistory.concat(normalized);
-        merged.sort(function(a, b) { return a.dateObj.getTime() - b.dateObj.getTime(); });
+        merged.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
         const deduped = [];
         let lastKey = null;
         for (const e of merged) {
-            const key = e.dateObj.getTime() + '|' + e.status;
+            const key = `${e.dateObj.getTime()}|${e.status}`;
             if (key !== lastKey) {
                 deduped.push(e);
                 lastKey = key;
@@ -78,39 +105,26 @@ class NeonovaCustomerModel {
         }
 
         const cutoff = Date.now() - NeonovaCustomerModel.RETENTION_MS;
-        const trimmed = [];
-        for (const e of deduped) {
-            if (e.dateObj.getTime() >= cutoff) trimmed.push(e);
-        }
-
-        // Preserve the most recent event even if older than retention.
-        // The renderer needs at least one event to infer pre-window state.
-        if (trimmed.length === 0 && deduped.length > 0) {
-            trimmed.push(deduped[deduped.length - 1]);
-        }
-
-        this.eventHistory = trimmed;
+        this.eventHistory = deduped.filter(e => e.dateObj.getTime() >= cutoff);
     }
 
     toJSON() {
-        const historyOut = [];
-        for (const e of this.eventHistory) {
-            historyOut.push({
-                dateObj: e.dateObj.toISOString(),
-                status: e.status
-            });
-        }
-
         return {
             radiusUsername: this.radiusUsername,
             friendlyName: this.friendlyName,
             status: this.status,
             durationSec: this.durationSec,
             lastUpdate: this.lastUpdate,
-            lastEventTime: this.lastEventTime instanceof Date 
-                ? this.lastEventTime.toISOString() 
+            lastEventTime: this.lastEventTime instanceof Date
+                ? this.lastEventTime.toISOString()
                 : (this.lastEventTime || null),
-            eventHistory: historyOut
+            disconnectedSince: this.disconnectedSince,
+            lastAlertSent: this.lastAlertSent,
+            alertsSuppressed: this.alertsSuppressed,
+            eventHistory: this.eventHistory.map(e => ({
+                dateObj: e.dateObj.toISOString(),
+                status: e.status
+            }))
         };
     }
 }
