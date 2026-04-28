@@ -1,7 +1,7 @@
 // src/controllers/neonova-customer-controller.js
 
 class NeonovaCustomerController {
-    #model;  
+    #model;
     constructor(radiusUsername, friendlyName = null, dashboardController, initialState = null) {
         if (typeof radiusUsername !== 'string' || !radiusUsername.trim()) {
             throw new Error('radiusUsername must be a non-empty string');
@@ -11,12 +11,10 @@ class NeonovaCustomerController {
         this.view = new NeonovaCustomerView(this);
     }
 
-    // Main getter for the customer model (use this everywhere)
     get model() {
         return this.#model;
     }
 
-    // Convenience getters (optional but useful)
     get radiusUsername() {
         return this.#model.radiusUsername;
     }
@@ -26,10 +24,9 @@ class NeonovaCustomerController {
     }
 
     toJSON() {
-        // Delegate to the model so buffer + any future fields come along automatically
         return this.#model.toJSON();
     }
-    
+
     static fromJSON(json, dashboardController) {
         return new NeonovaCustomerController(
             json.radiusUsername,
@@ -40,17 +37,15 @@ class NeonovaCustomerController {
                 durationSec: json.durationSec ?? 0,
                 lastUpdate: json.lastUpdate,
                 lastEventTime: json.lastEventTime,
+                disconnectedSince: json.disconnectedSince,
+                lastAlertSent: json.lastAlertSent,
+                alertsSuppressed: json.alertsSuppressed,
                 eventHistory: json.eventHistory
             }
         );
     }
 
-    // Called by dashboard controller during polling
-    updateFromPoll() {
-        // Model was already updated externally (in updateCustomerStatus)
-        // If you ever want to trigger view update here, do it:
-        // this.view.update();
-    }
+    updateFromPoll() { /* no-op (kept for compatibility) */ }
 
     async remove() {
         await this.dashboardController.getTabController().remove(this.radiusUsername);
@@ -58,7 +53,7 @@ class NeonovaCustomerController {
 
     launchReport() {
         const username = this.#model.radiusUsername;
-        const friendlyName = this.#model.friendlyName || username; 
+        const friendlyName = this.#model.friendlyName || username;
         console.log('[launchReport] Starting for:', username, friendlyName);
         new NeonovaReportOrderController(username, friendlyName);
     }
@@ -67,34 +62,35 @@ class NeonovaCustomerController {
         const username = this.#model.radiusUsername;
         const friendlyName = this.#model.friendlyName || username;
 
-        const endDate = new Date();                    // today
+        const endDate = new Date();
         const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 3);    // 3 days ago
+        startDate.setDate(startDate.getDate() - 3);
         startDate.setHours(0, 0, 0, 0);
-
-        console.log(`[Snapshot] Opening 3-day view for ${username}`);
 
         new NeonovaSnapshotController(username, friendlyName, startDate, endDate);
     }
 
     async updateFriendlyName(newName) {
         const trimmed = newName.trim();
-        if (trimmed === '') {
-            return false;
-        }
+        if (trimmed === '') return false;
         this.#model.friendlyName = trimmed;
 
         this.dashboardController.model.addOrUpdateCustomer({
             radiusUsername: this.radiusUsername,
             friendlyName: trimmed
         });
-        
+
         await this.dashboardController.getTabController().save();
-        this.view.update();  // refresh row to show new name
+        this.view.update();
         return true;
     }
 
-    // Expose the row for dashboard controller to collect
+    async toggleAlertsSuppressed() {
+        this.#model.toggleAlertsSuppressed();
+        await this.dashboardController.getTabController().save();
+        this.view.update();
+    }
+
     getRowElement() {
         return this.view.getElement();
     }
