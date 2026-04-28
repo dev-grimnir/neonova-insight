@@ -1,11 +1,11 @@
 class NeonovaDashboardModel {
     constructor() {
-        this.customers = [];  // Array of plain objects: { radiusUsername, friendlyName?, status, durationSec, lastEventTime?, ... }
+        this.customers = [];
+        this.admins = [];   // Array of plain objects: { name, phoneNumber }
         this.pollingIntervalMinutes = 1;
         this.isPollingPaused = false;
         this.lastUpdate = null;
         this.lastUpdatedDisplay = '--';
-        // Single encrypted settings blob (privacy + polling + future settings)
         this.settings = {
             privacyEnabled: false,
             pollingIntervalMinutes: 1,
@@ -13,8 +13,7 @@ class NeonovaDashboardModel {
         };
     }
 
-    // ─── Basic accessors ─────────────────────────────────────────────
-
+    // ─── Customer accessors (unchanged) ─────────────────────────────────────────────
     getCustomer(username) {
         return this.customers.find(c => c.radiusUsername === username);
     }
@@ -36,7 +35,29 @@ class NeonovaDashboardModel {
         return [...this.customers];
     }
 
-    // Polling settings
+    // ─── Admin accessors ─────────────────────────────────────────────
+    getAdmin(name) {
+        return this.admins.find(a => a.name === name);
+    }
+
+    addOrUpdateAdmin(adminData) {
+        const idx = this.admins.findIndex(a => a.name === adminData.name);
+        if (idx >= 0) {
+            this.admins[idx] = { ...this.admins[idx], ...adminData };
+        } else {
+            this.admins.push({ name: adminData.name, phoneNumber: adminData.phoneNumber });
+        }
+    }
+
+    removeAdmin(name) {
+        this.admins = this.admins.filter(a => a.name !== name);
+    }
+
+    getAdminsArray() {
+        return [...this.admins];
+    }
+
+    // ─── Polling settings (unchanged) ────────────────────────────────
     async setPollingInterval(minutes) {
         const safe = Math.max(1, Math.min(60, Number(minutes)));
         this.pollingIntervalMinutes = safe;
@@ -47,10 +68,9 @@ class NeonovaDashboardModel {
     async togglePolling() {
         this.isPollingPaused = !this.isPollingPaused;
         this.settings.pollingPaused = this.isPollingPaused;
-        await this.saveSettings(); 
+        await this.saveSettings();
     }
 
-    // Optional: simple computed / status
     get isPollingActive() {
         return !this.isPollingPaused;
     }
@@ -62,6 +82,7 @@ class NeonovaDashboardModel {
     toJSON() {
         return {
             customers: this.customers,
+            admins: this.admins,
             pollingIntervalMinutes: this.pollingIntervalMinutes,
             isPollingPaused: this.isPollingPaused,
             lastUpdate: this.lastUpdate?.toISOString(),
@@ -72,9 +93,8 @@ class NeonovaDashboardModel {
     // ====================== ENCRYPTED SETTINGS BLOB ======================
     async loadSettings() {
         const encrypted = localStorage.getItem('novaDashboardSettings');
-        
+
         if (!encrypted) {
-            // === ONE-TIME MIGRATION FROM OLD KEYS ===
             const oldPrivacy = localStorage.getItem('neonova-privacy-enabled');
             const oldInterval = localStorage.getItem('novaPollingIntervalMinutes');
             const oldPaused = localStorage.getItem('novaPollingPaused');
@@ -83,7 +103,6 @@ class NeonovaDashboardModel {
             if (oldInterval !== null) this.settings.pollingIntervalMinutes = parseInt(oldInterval, 10) || 1;
             if (oldPaused !== null) this.settings.pollingPaused = oldPaused === 'true';
 
-            // Clean up every leftover raw key
             localStorage.removeItem('neonova-privacy-enabled');
             localStorage.removeItem('novaPollingIntervalMinutes');
             localStorage.removeItem('novaPollingPaused');
@@ -103,10 +122,8 @@ class NeonovaDashboardModel {
             await this.saveSettings();
         }
 
-        // Keep the existing top-level properties in sync
         this.pollingIntervalMinutes = this.settings.pollingIntervalMinutes;
         this.isPollingPaused = this.settings.pollingPaused;
-        
     }
 
     async saveSettings() {
