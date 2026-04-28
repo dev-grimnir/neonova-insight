@@ -58,52 +58,49 @@ class NeonovaDashboardView extends BaseNeonovaView {
         return `
             <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 shrink-0 relative z-10">
                 <div class="flex items-center gap-4">
-                    <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.png" 
+                    <img src="https://raw.githubusercontent.com/dev-grimnir/coronova-post-processor/main/src/assets/nova-subscriber-logo.png"
                          alt="Nova Subscriber" class="h-10 w-auto">
-                    <button id="privacy-toggle-btn" 
+                    <button id="privacy-toggle-btn"
                             class="px-6 py-2.5 font-medium rounded-2xl flex items-center justify-center transition-all border shadow-sm"
                             title="Toggle Privacy Mode">
                         Privacy Off
                     </button>
+                    <button id="admins-btn"
+                            class="px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-600 shadow-sm"
+                            title="Manage Admins">
+                        Admins
+                    </button>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Polling control -->
                     <div class="relative group/polling">
-                        <button id="poll-toggle-btn" 
+                        <button id="poll-toggle-btn"
                                 class="min-w-[180px] px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl flex items-center justify-center gap-2.5 transition-all border border-zinc-700">
                             <i class="fas ${pollIcon} text-emerald-400"></i>
                             <span>${pollText} Polling</span>
                             <span class="text-emerald-400/80 text-sm font-mono">· ${interval} min</span>
                         </button>
-
-                        <!-- Slider tooltip (pops UP when minimized via CSS) -->
                         <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 hidden group-hover/polling:block z-20 pointer-events-auto">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-xs uppercase tracking-widest text-zinc-400">Polling Interval</span>
                                     <span id="interval-value-tooltip" class="font-mono text-emerald-400">${interval} min</span>
                                 </div>
-                                <input type="range" id="polling-interval-slider-tooltip" 
-                                       min="1" max="60" value="${interval}" 
+                                <input type="range" id="polling-interval-slider-tooltip"
+                                       min="1" max="60" value="${interval}"
                                        class="w-full accent-emerald-500 cursor-pointer">
                             </div>
-                            <!-- Arrow -->
                             <div class="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-zinc-900 border-l border-t border-zinc-700 rotate-45"></div>
                         </div>
                     </div>
-
-                    <!-- Last Updated – pure data from model (no calculation here) -->
-                    <span id="last-updated" 
+                    <span id="last-updated"
                           class="text-xs text-zinc-400 font-mono whitespace-nowrap">
                         Last Updated: <span class="text-emerald-400" id="last-updated-value">--</span>
                     </span>
-
                     <button class="refresh-btn px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-
-                    <button id="add-customer-btn" 
+                    <button id="add-customer-btn"
                             class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         Add Customer
                     </button>
@@ -343,25 +340,41 @@ class NeonovaDashboardView extends BaseNeonovaView {
     renderTabBar() {
         if (!this.tabBar) return;
         this.tabBar.innerHTML = '';
-    
+
         for (const tab of this.controller.getTabController().tabs) {
             const btn = document.createElement('button');
             btn.className = `neonova-tab-btn${tab.isActive ? ' active' : ''}`;
             btn.dataset.label = tab.label;
             const { connected, disconnected } = tab.getConnectionCounts();
+
+            const bellIcon = tab.isNetworkTab ? 'fa-bell' : 'fa-bell-slash';
+            const bellColor = tab.isNetworkTab ? '#34d399' : '#71717a';
+            const bellTitle = tab.isNetworkTab
+                ? 'Notifications ON for this tab (click to disable)'
+                : 'Notifications OFF for this tab (click to enable)';
+
             btn.innerHTML = `
+                <span class="tab-bell" title="${bellTitle}" style="margin-right:6px; color:${bellColor}; cursor:pointer;">
+                    <i class="fas ${bellIcon}"></i>
+                </span>
                 <span class="tab-label">${tab.label}</span>
                 <span style="margin-left: 6px; font-size: 12px; font-weight: 600; font-family: ui-monospace, monospace;">
                     <span style="color: #34d399;">${connected}</span><span style="color: #71717a;">/</span><span style="color: #ef4444;">${disconnected}</span>
                 </span>
                 <span class="tab-close" title="Close tab">&times;</span>
             `;
-    
+
+            btn.querySelector('.tab-bell').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this.controller.getTabController().toggleNetworkTab(tab.label);
+                this.renderTabBar();
+            });
+
             btn.querySelector('.tab-label').addEventListener('click', () => {
                 this.controller.getTabController().switchTab(tab.label);
                 this.renderTabBar();
             });
-    
+
             btn.querySelector('.tab-close').addEventListener('click', (e) => {
                 e.stopPropagation();
                 const confirmed = confirm(`Close tab "${tab.label}"?`);
@@ -370,8 +383,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     this.renderTabBar();
                 }
             });
-    
-            // Double-click label to rename
+
             btn.querySelector('.tab-label').addEventListener('dblclick', (e) => {
                 e.stopPropagation();
                 const newLabel = prompt('Rename tab:', tab.label);
@@ -380,11 +392,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     this.renderTabBar();
                 }
             });
-    
+
             this.tabBar.appendChild(btn);
         }
-    
-        // Add tab button
+
         const addBtn = document.createElement('button');
         addBtn.className = 'neonova-tab-add';
         addBtn.title = 'Add tab';
@@ -399,7 +410,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.tabBar.appendChild(addBtn);
     }
 
-/**
+    /**
     clearRows() {
         const tbody = this.panel.querySelector('#customer-table-body');
         if (tbody) tbody.replaceChildren();  // modern, clean (or innerHTML = '')
