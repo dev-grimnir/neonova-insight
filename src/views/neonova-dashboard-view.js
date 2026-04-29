@@ -366,7 +366,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 </span>
                 <span class="tab-label">${tab.label}</span>
                 <span style="margin-left: 6px; font-size: 12px; font-weight: 600; font-family: ui-monospace, monospace;">
-                    <span style="color: #34d399;">${connected}</span><span style="color: #71717a;">/</span><span style="color: #ef4444;">${disconnected}</span>
+                    ${connected > 0 ? `<span style="color: #34d399;">${connected}</span>` : ''}${connected > 0 && disconnected > 0 ? `<span style="color: #71717a;">/</span>` : ''}${disconnected > 0 ? `<span style="color: #ef4444;">${disconnected}</span>` : ''}
                 </span>
                 <span class="tab-close" title="Close tab">&times;</span>
             `;
