@@ -178,6 +178,13 @@ class NeonovaTabController {
         await this.save();
         this.dashboardController.view.renderTabBar();
     }
+
+    async toggleNetworkTab(label) {
+        const tab = this.tabs.find(t => t.label === label);
+        if (!tab) return;
+        tab.isNetworkTab = !tab.isNetworkTab;
+        await this.save();
+    }
     
     async switchTab(label) {
         this.tabs.forEach(t => t.isActive = t.label === label);
