@@ -375,6 +375,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 e.stopPropagation();
                 await this.controller.getTabController().toggleNetworkTab(tab.label);
                 this.renderTabBar();
+                for (const ctrl of tab.customers) {
+                    ctrl.view.update();
+                }
+                this.controller.getTabController().rebuildTable();
             });
 
             btn.querySelector('.tab-label').addEventListener('click', () => {
