@@ -95,7 +95,6 @@ class NeonovaCustomerModel {
     }
 
     toJSON() {
-        alertsSuppressed: this.alertsSuppressed
         const historyOut = [];
         for (const e of this.eventHistory) {
             historyOut.push({
@@ -105,6 +104,7 @@ class NeonovaCustomerModel {
         }
 
         return {
+            alertsSuppressed: this.alertsSuppressed,
             radiusUsername: this.radiusUsername,
             friendlyName: this.friendlyName,
             status: this.status,
