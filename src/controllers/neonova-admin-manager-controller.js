@@ -1,20 +1,9 @@
 class NeonovaAdminManagerController {
     constructor(dashboardController) {
-        this.dashboardController = dashboardController;
-        this.model = new NeonovaAdminManagerModel();
-        this.view = new NeonovaAdminManagerView(this);
-
-        // Hydrate runtime admin controllers from the canonical plain-data list
-        const adminsData = this.dashboardController.model.getAdminsArray();
-        for (const data of adminsData) {
-            try {
-                const ctrl = NeonovaAdminController.fromJSON(data, this.dashboardController);
-                this.model.addAdmin(ctrl);
-            } catch (e) {
-                console.warn('[NeonovaAdminManagerController] failed to hydrate admin:', data, e);
-            }
+            this.dashboardController = dashboardController;
+            this.model = dashboardController.getAdminManagerModel();
+            this.view = new NeonovaAdminManagerView(this);
         }
-    }
 
     async show() {
         await this.view.show();
