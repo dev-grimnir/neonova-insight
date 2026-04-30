@@ -5,6 +5,10 @@ class NeonovaAdminManagerController {
         this.load();
     }
 
+    getAdminControllers() {
+        return [...this.model.admins];
+    }
+
     async load() {
         const blob = localStorage.getItem('novaDashboardAdmins');
         if (!blob) return;
