@@ -1,39 +1,54 @@
 class NeonovaAdminManagerController {
-    constructor(dashboardController) {
-            this.dashboardController = dashboardController;
-            this.model = new NeonovaAdminManagerModel();
-            this.view = new NeonovaAdminManagerView(this);
+    constructor() {
+        this.model = new NeonovaAdminManagerModel();
+        this.view = new NeonovaAdminManagerView(this);
+        this.load();
+    }
+
+    async load() {
+        const blob = localStorage.getItem('novaDashboardAdmins');
+        if (!blob) return;
+        try {
+            const json = JSON.parse(await NeonovaCryptoController.decryptData(blob));
+            if (Array.isArray(json.admins)) {
+                this.model.admins = json.admins.map(a =>
+                    NeonovaAdminController.fromJSON(a, this)
+                );
+            }
+        } catch (e) {
+            console.error('[NeonovaAdminManagerController.load]', e);
         }
-
-    async show() {
-        await this.view.show();
     }
 
-    hide() {
-        this.view.hide();
+    async save() {
+        try {
+            const json = JSON.stringify({ admins: this.model.toJSON() });
+            const encrypted = await NeonovaCryptoController.encryptData(json);
+            localStorage.setItem('novaDashboardAdmins', encrypted);
+        } catch (e) {
+            console.error('[NeonovaAdminManagerController.save]', e);
+        }
     }
 
-    getAdminControllers() {
-        return [...this.model.admins];
-    }
-    
     async add(name, phoneNumber) {
         const trimmedName = (name || '').trim();
         const digits = (phoneNumber || '').replace(/\D/g, '').slice(0, 10);
         if (!trimmedName || digits.length !== 10) return false;
         if (this.model.findAdmin(trimmedName)) return false;
 
-        const ctrl = new NeonovaAdminController(trimmedName, digits, this.dashboardController);
+        const ctrl = new NeonovaAdminController(trimmedName, digits, this);
         this.model.addAdmin(ctrl);
-
-        await this.dashboardController.getTabController().save();
+        await this.save();
         this.view.renderList();
         return true;
     }
 
     async remove(name) {
         this.model.removeAdmin(name);
-        await this.dashboardController.getTabController().save();
-        this.view.renderList();
+        await this.save();
+    }
+
+    async show() {
+        await this.view.show();
     }
 }
