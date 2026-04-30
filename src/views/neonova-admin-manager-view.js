@@ -67,15 +67,15 @@ class NeonovaAdminManagerView extends NeonovaBaseModalView {
 
         const updateAddState = () => {
             const name = nameInput.value.trim();
-            const digits = NeonovaAdminView.extractDigits(phoneInput.value);
+            const digits = NeonovaAdminManagerView.extractDigits(phoneInput.value);
             addBtn.disabled = !(name.length > 0 && digits.length === 10);
         };
 
         nameInput?.addEventListener('input', updateAddState);
 
         phoneInput?.addEventListener('input', () => {
-            const digits = NeonovaAdminView.extractDigits(phoneInput.value);
-            phoneInput.value = NeonovaAdminView.formatForDisplay(digits);
+            const digits = NeonovaAdminManagerView.extractDigits(phoneInput.value);
+            phoneInput.value = NeonovaAdminManagerView.formatForDisplay(digits);
             phoneInput.selectionStart = phoneInput.selectionEnd = phoneInput.value.length;
             updateAddState();
         });
@@ -83,7 +83,7 @@ class NeonovaAdminManagerView extends NeonovaBaseModalView {
         const handleAdd = async () => {
             if (addBtn.disabled) return;
             const name = nameInput.value.trim();
-            const digits = NeonovaAdminView.extractDigits(phoneInput.value);
+            const digits = NeonovaAdminManagerView.extractDigits(phoneInput.value);
             const success = await this.controller.add(name, digits);
             if (success) {
                 nameInput.value = '';
@@ -133,5 +133,19 @@ class NeonovaAdminManagerView extends NeonovaBaseModalView {
             if (row) fragment.appendChild(row);
         }
         tbody.appendChild(fragment);
+    }
+
+    static extractDigits(input) {
+        const digits = (input || '').toString().replace(/\D/g, '');
+        if (digits.length === 11 && digits.startsWith('1')) return digits.slice(1);
+        return digits.slice(0, 10);
+    }
+
+    static formatForDisplay(digits) {
+        const d = (digits || '').toString().replace(/\D/g, '').slice(0, 10);
+        if (d.length === 0) return '';
+        if (d.length <= 3) return d;
+        if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+        return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 10)}`;
     }
 }
