@@ -12,6 +12,12 @@ class NeonovaDashboardController {
         this.#modalActive = false;
     }
 
+    showAdminManager() {
+        if (this.#adminManagerController?.view?.modal) return;
+        this.#adminManagerController = new NeonovaAdminManagerController(this);
+        this.#adminManagerController.show();
+    }
+
     showAddCustomer() {
         const addController = new NeonovaAddCustomerController(this.#tabController);
         addController.show();
