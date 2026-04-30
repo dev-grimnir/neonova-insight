@@ -1,7 +1,7 @@
 class NeonovaAdminManagerController {
     constructor(dashboardController) {
             this.dashboardController = dashboardController;
-            this.model = dashboardController.getAdminManagerModel();
+            this.model = new NeonovaAdminManagerModel();
             this.view = new NeonovaAdminManagerView(this);
         }
 
