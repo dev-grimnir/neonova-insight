@@ -65,6 +65,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             title="Toggle Privacy Mode">
                         Privacy Off
                     </button>
+                    <button id="admins-btn"
+                            class="px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-600 shadow-sm"
+                            title="Manage Admins">
+                        Admins
+                    </button>
                 </div>
 
                 <div class="flex items-center gap-4">
@@ -453,6 +458,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
         // Add customer
         this.header.querySelector('#add-customer-btn')?.addEventListener('click', () => {
             this.controller.showAddCustomer();
+        });
+
+        // Admins
+        this.header.querySelector('#admins-btn')?.addEventListener('click', () => {
+            this.controller.showAdminManager();
         });
     }
 
