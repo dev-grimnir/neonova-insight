@@ -35,13 +35,16 @@ class NeonovaTabModel {
             label: this.label,
             isActive: this.isActive,
             isNetworkTab: this.isNetworkTab,
-            customers: this.customers.map(c => c.toJSON())
+            customers: this.customers.map(c => c.model.toJSON())
         };
     }
 
     static fromJSON(json, dashboardController) {
         const tab = new NeonovaTabModel(json.label, json.isActive, json.isNetworkTab === true);
-        tab.customers = json.customers.map(c => NeonovaCustomerController.fromJSON(c, dashboardController));
+        tab.customers = json.customers.map(c => {
+            const model = NeonovaCustomerModel.fromJSON(c);
+            return new NeonovaCustomerController(model, dashboardController);
+        });
         return tab;
     }
 }
