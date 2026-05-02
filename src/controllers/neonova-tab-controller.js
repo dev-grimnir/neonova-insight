@@ -228,6 +228,16 @@ class NeonovaTabController {
         if (!tab.isNetworkTab) return;
         if (customer.alertsSuppressed) return;
 
+        // Backfill: a modem already disconnected when the dashboard started
+        // (or before this customer was added) has no anchor timestamp. Use
+        // the actual disconnect event time so threshold elapsed time is real.
+        if (customer.status === 'Disconnected'
+            && customer.disconnectedSince === null
+            && customer.lastEventTime instanceof Date
+            && !isNaN(customer.lastEventTime.getTime())) {
+            customer.markDisconnected(customer.lastEventTime.getTime());
+        }
+        
         const newStatus = customer.status;
         const now = Date.now();
         const nodeName = customer.friendlyName || customer.radiusUsername;
