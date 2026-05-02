@@ -22,9 +22,11 @@ class NeonovaNotifierController {
     }
 
     static #buildMessage(status, nodeName, tabLabel) {
-        const verb = status === 'Connected' ? 'RESTORED' : 'DOWN';
-        const time = new Date().toLocaleTimeString();
-        return `NODE ${verb}: [${tabLabel}] ${nodeName} @ ${time}`;
+        const stamp = new Date().toLocaleString();
+        if (status === 'Connected') {
+            return `ALERT - Network Node ${nodeName} is back online as of ${stamp}.`;
+        }
+        return `ALERT - Network Node ${nodeName} is down as of ${stamp}.`;
     }
 
     static async #readAdmins() {
