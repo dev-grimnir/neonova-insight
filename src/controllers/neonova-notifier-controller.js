@@ -6,11 +6,11 @@ class NeonovaNotifierController {
      * @param {string} nodeName
      * @param {string} tabLabel
      */
-    static async alert(status, nodeName, tabLabel) {
+    static async alert(status, nodeName, tabLabel, sinceTimestamp = null) {
         const admins = await this.#readAdmins();
         if (!admins.length) return;
 
-        const message = this.#buildMessage(status, nodeName, tabLabel);
+        const message = this.#buildMessage(status, nodeName, tabLabel, sinceTimestamp);
 
         for (const admin of admins) {
             try {
@@ -21,8 +21,11 @@ class NeonovaNotifierController {
         }
     }
 
-    static #buildMessage(status, nodeName, tabLabel) {
-        const stamp = new Date().toLocaleString();
+    static #buildMessage(status, nodeName, tabLabel, sinceTimestamp) {
+        const stamp = sinceTimestamp
+            ? new Date(sinceTimestamp).toLocaleString()
+            : new Date().toLocaleString();
+
         if (status === 'Connected') {
             return `ALERT - Network Node ${nodeName} is back online as of ${stamp}.`;
         }
