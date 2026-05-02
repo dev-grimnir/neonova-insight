@@ -251,7 +251,10 @@ class NeonovaTabController {
 
         if (prevStatus === 'Disconnected' && newStatus === 'Connected') {
             if (customer.lastAlertSent !== null) {
-                NeonovaNotifierController.alert('Connected', nodeName, tab.label);
+                const reconnectedAt = customer.lastEventTime instanceof Date
+                    ? customer.lastEventTime.getTime()
+                    : Date.now();
+                NeonovaNotifierController.alert('Connected', nodeName, tab.label, reconnectedAt);
             }
             customer.markReconnected();
             return;
@@ -261,7 +264,7 @@ class NeonovaTabController {
             && customer.disconnectedSince !== null
             && customer.lastAlertSent === null) {
             if ((now - customer.disconnectedSince) >= NeonovaTabController.DOWN_THRESHOLD_MS) {
-                NeonovaNotifierController.alert('Disconnected', nodeName, tab.label);
+                NeonovaNotifierController.alert('Disconnected', nodeName, tab.label, customer.disconnectedSince);
                 customer.markAlerted(now);
             }
         }
