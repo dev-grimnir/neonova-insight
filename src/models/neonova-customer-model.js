@@ -9,7 +9,12 @@ class NeonovaCustomerModel {
         this.durationSec = state.durationSec ?? 0;
         this.lastUpdate = state.lastUpdate || new Date().toLocaleString();
         this.lastEventTime = state.lastEventTime ? new Date(state.lastEventTime) : null;
-
+        this.disconnectedSince = (typeof state.disconnectedSince === 'number') ? state.disconnectedSince : null;
+        this.lastAlertSent     = (typeof state.lastAlertSent === 'number')     ? state.lastAlertSent     : null;
+        this.alertsSuppressed = state.alertsSuppressed === true;
+        this.disconnectedSince = (typeof state.disconnectedSince === 'number') ? state.disconnectedSince : null;
+        this.lastAlertSent     = (typeof state.lastAlertSent === 'number')     ? state.lastAlertSent     : null;
+        
         this.eventHistory = [];
         if (Array.isArray(state.eventHistory)) {
             for (const e of state.eventHistory) {
@@ -92,6 +97,23 @@ class NeonovaCustomerModel {
         this.eventHistory = trimmed;
     }
 
+    static fromJSON(json) {
+        return new NeonovaCustomerModel(
+            json.radiusUsername,
+            json.friendlyName,
+            {
+                status: json.status || 'Connecting...',
+                durationSec: json.durationSec ?? 0,
+                lastUpdate: json.lastUpdate,
+                lastEventTime: json.lastEventTime,
+                alertsSuppressed: json.alertsSuppressed,
+                disconnectedSince: json.disconnectedSince,
+                lastAlertSent: json.lastAlertSent,
+                eventHistory: json.eventHistory
+            }
+        );
+    }
+
     toJSON() {
         const historyOut = [];
         for (const e of this.eventHistory) {
@@ -102,6 +124,7 @@ class NeonovaCustomerModel {
         }
 
         return {
+            alertsSuppressed: this.alertsSuppressed,
             radiusUsername: this.radiusUsername,
             friendlyName: this.friendlyName,
             status: this.status,
@@ -110,7 +133,30 @@ class NeonovaCustomerModel {
             lastEventTime: this.lastEventTime instanceof Date 
                 ? this.lastEventTime.toISOString() 
                 : (this.lastEventTime || null),
+            disconnectedSince: this.disconnectedSince,
+            lastAlertSent: this.lastAlertSent,
+            disconnectedSince: this.disconnectedSince,
+            lastAlertSent: this.lastAlertSent,
             eventHistory: historyOut
         };
+    }
+
+    markDisconnected(now = Date.now()) {
+        this.disconnectedSince = now;
+        this.lastAlertSent = null;
+    }
+
+    markAlerted(now = Date.now()) {
+        this.lastAlertSent = now;
+    }
+
+    markReconnected() {
+        this.disconnectedSince = null;
+        this.lastAlertSent = null;
+    }
+
+    toggleAlertsSuppressed() {
+        this.alertsSuppressed = !this.alertsSuppressed;
+        return this.alertsSuppressed;
     }
 }

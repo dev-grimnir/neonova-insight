@@ -1,6 +1,7 @@
 class NeonovaDashboardController {
     #modalActive;
     #tabController;
+    #adminManagerController;
     
     constructor(model, tabController, view) {
         this.model = model;
@@ -10,6 +11,13 @@ class NeonovaDashboardController {
         this.initialized = false;
         this.passphraseController = null;
         this.#modalActive = false;
+        this.#adminManagerController = null;
+    }
+
+    showAdminManager() {
+        if (this.#adminManagerController?.view?.modal) return;
+        this.#adminManagerController = new NeonovaAdminManagerController(this);
+        this.#adminManagerController.show();
     }
 
     showAddCustomer() {
