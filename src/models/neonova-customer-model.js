@@ -1,6 +1,5 @@
 class NeonovaCustomerModel {
     static RETENTION_MS = 24 * 60 * 60 * 1000;
-    #alertsSuppressed = false;
 
     constructor(radiusUsername, friendlyName = '', initialState = null) {
         const state = initialState || {};
@@ -13,6 +12,8 @@ class NeonovaCustomerModel {
         this.disconnectedSince = (typeof state.disconnectedSince === 'number') ? state.disconnectedSince : null;
         this.lastAlertSent     = (typeof state.lastAlertSent === 'number')     ? state.lastAlertSent     : null;
         this.alertsSuppressed = state.alertsSuppressed === true;
+        this.disconnectedSince = (typeof state.disconnectedSince === 'number') ? state.disconnectedSince : null;
+        this.lastAlertSent     = (typeof state.lastAlertSent === 'number')     ? state.lastAlertSent     : null;
         
         this.eventHistory = [];
         if (Array.isArray(state.eventHistory)) {
@@ -106,6 +107,8 @@ class NeonovaCustomerModel {
                 lastUpdate: json.lastUpdate,
                 lastEventTime: json.lastEventTime,
                 alertsSuppressed: json.alertsSuppressed,
+                disconnectedSince: json.disconnectedSince,
+                lastAlertSent: json.lastAlertSent,
                 eventHistory: json.eventHistory
             }
         );
@@ -132,16 +135,10 @@ class NeonovaCustomerModel {
                 : (this.lastEventTime || null),
             disconnectedSince: this.disconnectedSince,
             lastAlertSent: this.lastAlertSent,
+            disconnectedSince: this.disconnectedSince,
+            lastAlertSent: this.lastAlertSent,
             eventHistory: historyOut
         };
-    }
-
-    toggleAlertsSuppressed() {
-        if (this.#alertsSuppressed === true) {
-            this.#alertsSuppressed = false;
-        } else {
-            this.#alertsSuppressed = true;
-        }
     }
 
     markDisconnected(now = Date.now()) {
