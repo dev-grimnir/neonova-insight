@@ -86,7 +86,7 @@ If you have any security, compliance, or operational questions, feel free to rea
 1. Install **Tampermonkey** (Chrome / Firefox / Edge).
 2. Click this raw link — Tampermonkey will prompt to install:
 
-   - **[NeoNova Dashboard](https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/scripts/neonova-dashboard.user.js)** ← Main script  
+   - **[NeoNova Dashboard](https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/scripts/neonova-dashboard.user.js)** ← Main script  
      (All supporting modules in `src/` are auto-`@require`d)
 
 3. Visit `https://admin.neonova.net` → log in → the dashboard panel appears automatically.
