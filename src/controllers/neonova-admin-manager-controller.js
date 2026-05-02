@@ -15,9 +15,10 @@ class NeonovaAdminManagerController {
         try {
             const json = JSON.parse(await NeonovaCryptoController.decryptData(blob));
             if (Array.isArray(json.admins)) {
-                this.model.admins = json.admins.map(a =>
-                    NeonovaAdminController.fromJSON(a, this)
-                );
+                this.model.admins = json.admins.map(a => {
+                    const model = NeonovaAdminModel.fromJSON(a);
+                    return new NeonovaAdminController(this, null, null, model);
+                });
             }
         } catch (e) {
             console.error('[NeonovaAdminManagerController.load]', e);
@@ -26,7 +27,9 @@ class NeonovaAdminManagerController {
 
     async save() {
         try {
-            const json = JSON.stringify({ admins: this.model.toJSON() });
+            const json = JSON.stringify({
+                admins: this.model.admins.map(a => a.model.toJSON())
+            });
             const encrypted = await NeonovaCryptoController.encryptData(json);
             localStorage.setItem('novaDashboardAdmins', encrypted);
         } catch (e) {
@@ -39,8 +42,7 @@ class NeonovaAdminManagerController {
         const digits = (phoneNumber || '').replace(/\D/g, '').slice(0, 10);
         if (!trimmedName || digits.length !== 10) return false;
         if (this.model.findAdmin(trimmedName)) return false;
-
-        const ctrl = new NeonovaAdminController(trimmedName, digits, this);
+        const ctrl = new NeonovaAdminController(this, trimmedName, digits);
         this.model.addAdmin(ctrl);
         await this.save();
         this.view.renderList();
