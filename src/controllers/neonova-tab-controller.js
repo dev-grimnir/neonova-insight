@@ -1,4 +1,5 @@
 class NeonovaTabController {
+    static DOWN_THRESHOLD_MS = 5 * 60 * 1000;
     constructor(dashboardController) {
         this.dashboardController = dashboardController;
         this.tabs = [];
@@ -198,7 +199,9 @@ class NeonovaTabController {
         for (const tab of this.tabs) {
             for (const ctrl of tab.customers) {
                 try {
+                    const prevStatus = ctrl.model.status;
                     await this.dashboardController.updateCustomerStatus(ctrl.model);
+                    this.#evaluateAlerting(ctrl.model, tab, prevStatus);
                     ctrl.view.update();
                 } catch (err) {
                     console.error(`Poll error for ${ctrl.radiusUsername}:`, err);
@@ -208,6 +211,50 @@ class NeonovaTabController {
             }
         }
         this.view.render();
+    }
+
+    /**
+     * Decides whether a state change warrants firing the notifier. The notifier
+     * itself knows nothing about thresholds, suppression, or tabs — that all
+     * lives here.
+     *
+     *   Connected → Disconnected: stamp disconnectedSince (start the clock)
+     *   Disconnected → Connected: if an alert was fired during this down event,
+     *                              send a recovery alert; either way, clear timers
+     *   Still Disconnected:        if disconnectedSince exists, no alert sent yet,
+     *                              and elapsed >= threshold, fire and stamp lastAlertSent
+     */
+    #evaluateAlerting(customer, tab, prevStatus) {
+        if (!tab.isNetworkTab) return;
+        if (customer.alertsSuppressed) return;
+
+        const newStatus = customer.status;
+        const now = Date.now();
+        const nodeName = customer.friendlyName || customer.radiusUsername;
+
+        if (prevStatus === 'Connected' && newStatus === 'Disconnected') {
+            if (customer.disconnectedSince === null) {
+                customer.markDisconnected(now);
+            }
+            return;
+        }
+
+        if (prevStatus === 'Disconnected' && newStatus === 'Connected') {
+            if (customer.lastAlertSent !== null) {
+                NeonovaNotifierController.alert('Connected', nodeName, tab.label);
+            }
+            customer.markReconnected();
+            return;
+        }
+
+        if (newStatus === 'Disconnected'
+            && customer.disconnectedSince !== null
+            && customer.lastAlertSent === null) {
+            if ((now - customer.disconnectedSince) >= NeonovaTabController.DOWN_THRESHOLD_MS) {
+                NeonovaNotifierController.alert('Disconnected', nodeName, tab.label);
+                customer.markAlerted(now);
+            }
+        }
     }
 
     async save() {
