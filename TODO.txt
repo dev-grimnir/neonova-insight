@@ -5,3 +5,4 @@
 4 - dashboard minimizes when esc is pressed on open modal
 5 - keyboard cursor needs to be on radius username by default on add customer view
 6 - refine the appearance of the snapshot view.  it's not using space efficiently.
+7 - clicking on the status badge causes a browser alert, if no data is found within the automated range.
