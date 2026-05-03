@@ -9,8 +9,9 @@
 // @run-at       document-end
 // @updateURL    https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/scripts/neonova-dashboard.user.js
 // @downloadURL  https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/scripts/neonova-dashboard.user.js
-// @require https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
+// @require      https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/core/utils.js
+// @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/dev/src/core/neonova-toast.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/models/neonova-admin-model.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/models/log-entry.js
 // @require      https://raw.githubusercontent.com/dev-grimnir/neonova-insight/main/src/models/neonova-customer-model.js
