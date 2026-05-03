@@ -12,7 +12,7 @@
 class NeonovaToast {
     static #ENTER_MS = 200;
     static #EXIT_MS = 700;
-    static #DEFAULT_DURATION_MS = 5000;
+    static #DEFAULT_DURATION_MS = 3000;
 
     static error(message, options = {}) {
         return this.#render(message, { ...options, type: 'error' });
