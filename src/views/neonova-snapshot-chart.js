@@ -303,8 +303,8 @@ class NeonovaSnapshotChart {
                         }
                     },
                     y: {
-                        min: -1.5,
-                        max: 1.5,
+                        min: -1.25,
+                        max: 1.25,
                         ticks: { display: false },
                         grid: {
                             color: ctx => ctx.tick.value === 0 ? '#a3a3a3' : '#27272a',
