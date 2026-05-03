@@ -59,7 +59,7 @@ class NeonovaTabController {
     
         const activeTab = this.getActiveTab();
         if (activeTab.customers.find(c => c.radiusUsername === trimmed)) {
-            alert('Already added');
+            NeonovaToast.error("This customer has already beeen added to this tab.");
             return;
         }
     
