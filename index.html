@@ -8,35 +8,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <style>
-    /* Demo environment lacks the host-page CSS reset that production
-       relies on. Backfill the bits that matter. */
-    
-    .neonova-dashboard button,
-    .neonova-dashboard button span {
-      white-space: nowrap;
-    }
-  
-    /* Tailwind Play CDN inconsistently generates these utilities;
-       pin the colors explicitly so buttons render reliably. */
-    .neonova-dashboard .bg-zinc-700 { background-color: #3f3f46; }
-    .neonova-dashboard .bg-zinc-700:hover,
-    .neonova-dashboard .hover\:bg-zinc-600:hover { background-color: #52525b; }
-    .neonova-dashboard .bg-zinc-800 { background-color: #27272a; }
-    .neonova-dashboard .bg-zinc-800:hover,
-    .neonova-dashboard .hover\:bg-zinc-700:hover { background-color: #3f3f46; }
-    .neonova-dashboard .bg-zinc-900 { background-color: #18181b; }
-    .neonova-dashboard .bg-emerald-600 { background-color: #059669; }
-    .neonova-dashboard .bg-emerald-600:hover,
-    .neonova-dashboard .hover\:bg-emerald-500:hover { background-color: #10b981; }
-  
-    .neonova-dashboard .border-zinc-600 { border-color: #52525b; }
-    .neonova-dashboard .border-zinc-700 { border-color: #3f3f46; }
-    .neonova-dashboard .border-zinc-800 { border-color: #27272a; }
-  </style>
-  
-  <!-- Tailwind (Play CDN) -->
-  <!--<script src="https://cdn.tailwindcss.com"></script>-->
+  <link rel="stylesheet" href="demo/tailwind.min.css">
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
