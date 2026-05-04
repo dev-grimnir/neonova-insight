@@ -7,6 +7,15 @@
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    /* Demo environment lacks the host-page CSS reset that production
+       relies on. Force button text to stay on one line. */
+    .neonova-dashboard button,
+    .neonova-dashboard button span {
+      white-space: nowrap;
+    }
+  </style>
   
   <!-- Tailwind (Play CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
