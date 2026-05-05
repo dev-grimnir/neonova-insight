@@ -159,7 +159,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: RESIDENTIAL_WEIGHTS,
             currentState: 'normal'
         }],
-        ['dchen_voip', {
+        ['dchen.voip', {
             friendlyName: 'Daniel Chen',
             flavor: 'stable-residential',
             // Heavy VOIP user — pays attention to reliability, premium connection
@@ -183,7 +183,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: RESIDENTIAL_WEIGHTS,
             currentState: 'normal'
         }],
-        ['lhanson_pgh', {
+        ['lhanson.pgh', {
             friendlyName: 'Lori Hanson',
             flavor: 'flaky-residential',
             disconnectsPerDay: 5.2,
@@ -210,7 +210,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: RESIDENTIAL_WEIGHTS,
             currentState: 'normal'
         }],
-        ['twatkins_rural', {
+        ['twatkins.rural', {
             friendlyName: 'Tom Watkins',
             flavor: 'flaky-residential',
             // Rural / weather-affected — the worst non-special-state customer
@@ -225,7 +225,7 @@ class NeonovaProfileRegistry {
         // STABLE BUSINESS — backbone-grade reliability
         // Very few disconnects, very short outages, peaks in business hours
         // ============================================================
-        ['pacific-st-node-04', {
+        ['pacific.st.node.04', {
             friendlyName: 'Pacific St Node 4',
             flavor: 'stable-business',
             disconnectsPerDay: 0.05,
@@ -234,7 +234,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: BUSINESS_WEIGHTS,
             currentState: 'normal'
         }],
-        ['bentleyville-tower-7', {
+        ['bentleyville.tower.7', {
             friendlyName: 'Bentleyville Tower 7',
             flavor: 'stable-business',
             disconnectsPerDay: 0.08,
@@ -243,7 +243,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: BUSINESS_WEIGHTS,
             currentState: 'normal'
         }],
-        ['macgregor-relay', {
+        ['macgregor.relay', {
             friendlyName: 'MacGregor Relay',
             flavor: 'stable-business',
             disconnectsPerDay: 0.07,
@@ -252,7 +252,7 @@ class NeonovaProfileRegistry {
             timeOfDayWeights: BUSINESS_WEIGHTS,
             currentState: 'normal'
         }],
-        ['denverton-school-modem', {
+        ['denverton.school.modem', {
             friendlyName: 'Denverton School District',
             flavor: 'stable-business',
             disconnectsPerDay: 0.10,
@@ -274,7 +274,7 @@ class NeonovaProfileRegistry {
          * rate is moderate so historical reports show a believable, troubled
          * customer rather than a perfect one with one freak outage.
          */
-        ['chodges_mtwash', {
+        ['chodges.mtwash', {
             friendlyName: 'Carl Hodges',
             flavor: 'currently-down',
             disconnectsPerDay: 2.0,
@@ -306,7 +306,7 @@ class NeonovaProfileRegistry {
          * since install. Useful as a "control group" — a customer who was
          * troubled, got new gear, and is now fine.
          */
-        ['klindstrom_42', {
+        ['klindstrom.42', {
             friendlyName: 'Kris Lindstrom',
             flavor: 'recently-replaced',
             disconnectsPerDay: 0.05,    // unused (no walk runs for this state)
