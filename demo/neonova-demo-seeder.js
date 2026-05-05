@@ -52,11 +52,11 @@ class NeonovaDemoSeeder {
             label: 'Network',
             active: true,
             usernames: [
-                'chodges_mtwash',          // currently-down — alert centerpiece
-                'pacific-st-node-04',
-                'bentleyville-tower-7',
-                'macgregor-relay',
-                'denverton-school-modem'
+                'chodges.mtwash',          // currently-down — alert centerpiece
+                'pacific.st.node.04',
+                'bentleyville.tower.7',
+                'macgregor.relay',
+                'denverton.school.modem'
             ]
         },
         {
@@ -68,19 +68,19 @@ class NeonovaDemoSeeder {
                 'dpatel0421',
                 'swilliams88',
                 'rgarcia2401',
-                'dchen_voip',
+                'dchen.voip',
                 'jburke7621',              // flaky
                 'pmoreno1167',             // just-reconnected
-                'klindstrom_42'            // recently-installed
+                'klindstrom.42'            // recently-installed
             ]
         },
         {
             label: 'Watchlist',
             active: false,
             usernames: [
-                'twatkins_rural',          // worst-case flaky
+                'twatkins.rural',          // worst-case flaky
                 'emcfadden',
-                'lhanson_pgh',
+                'lhanson.pgh',
                 'bnguyen419'
             ]
         }
