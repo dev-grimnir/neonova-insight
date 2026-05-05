@@ -1,32 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>neonova-insight — about preview</title>
+  <title>Neonova Insight — Interactive Demo</title>
 
-  <!--
-    ============================================================
-    INTEGRATION GUIDE — three pieces to copy into index.html
-    ============================================================
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    PIECE 1: <style> block below.
-       Copy into the <head> of index.html, alongside the existing
-       inline <style> reset rules.
+  <link rel="stylesheet" href="demo/tailwind.min.css">
+  <style>
+    .neonova-dashboard {
+            max-width: 1250px !important;
+    }
+    .neonova-dashboard #header-container > div > div {
+      flex-shrink: 0;
+    }
+    /* Production runs on a host page whose CSS resets buttons to
+       white-space: nowrap. The standalone demo page has no such reset. */
+    .neonova-dashboard button {
+      white-space: nowrap;
+    }
+  </style>
 
-    PIECE 2: <header class="about-header"> block in <body>.
-       Place ABOVE wherever the dashboard mounts.
-
-    PIECE 3: <section class="about-body"> block in <body>.
-       Place BELOW wherever the dashboard mounts.
-
-    The grey rectangle in this preview labelled "DASHBOARD PANEL"
-    is NOT something to copy — it's just standing in so you can
-    see how the about content frames around the panel.
-    ============================================================
-  -->
-
-  <!-- ===== PIECE 1 START: copy into <head> ===== -->
+  <!-- About-as-background styles -->
   <style>
     .about-header,
     .about-body {
@@ -77,7 +74,9 @@
     }
 
     .about-body {
-      padding: 2rem 1.5rem 4rem;
+      /* Extra bottom padding so the last paragraph clears the
+         minimized panel strip at viewport bottom. */
+      padding: 2rem 1.5rem 6rem;
     }
 
     .about-body-inner {
@@ -117,30 +116,12 @@
       }
     }
   </style>
-  <!-- ===== PIECE 1 END ===== -->
 
-  <!-- preview-only style for the panel placeholder -->
-  <style>
-    body { background: #3f3f46; margin: 0; }
-    .panel-placeholder {
-      max-width: 1250px;
-      margin: 0 auto;
-      height: 600px;
-      background: #18181b;
-      border: 2px dashed #52525b;
-      color: #71717a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: ui-monospace, monospace;
-      font-size: 0.875rem;
-      letter-spacing: 0.1em;
-    }
-  </style>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body>
+<body class="bg-zinc-700 text-slate-200 font-sans">
 
-  <!-- ===== PIECE 2 START: copy into <body>, above dashboard mount ===== -->
   <header class="about-header">
     <div class="about-header-inner">
       <h1>neonova-insight</h1>
@@ -151,14 +132,7 @@
       </p>
     </div>
   </header>
-  <!-- ===== PIECE 2 END ===== -->
 
-
-  <!-- preview-only: stand-in for the dashboard panel -->
-  <div class="panel-placeholder">DASHBOARD PANEL — preview placeholder, do not copy</div>
-
-
-  <!-- ===== PIECE 3 START: copy into <body>, below dashboard mount ===== -->
   <section class="about-body">
     <div class="about-body-inner">
       <p>
@@ -190,7 +164,67 @@
       </p>
     </div>
   </section>
-  <!-- ===== PIECE 3 END ===== -->
+
+  <!-- =====================================================================
+       Production sources — loaded in @require order from the userscript.
+       Order matters: core → models → controllers → views.
+       ===================================================================== -->
+
+  <!-- Core -->
+  <script src="src/core/utils.js"></script>
+  <script src="src/core/neonova-toast.js"></script>
+
+  <!-- Models -->
+  <script src="src/models/neonova-admin-model.js"></script>
+  <script src="src/models/log-entry.js"></script>
+  <script src="src/models/neonova-customer-model.js"></script>
+  <script src="src/models/neonova-admin-manager-model.js"></script>
+  <script src="src/models/neonova-dashboard-model.js"></script>
+  <script src="src/models/neonova-tab-model.js"></script>
+  <script src="src/models/neonova-report-model.js"></script>
+  <script src="src/models/neonova-snapshot-model.js"></script>
+
+  <!-- Controllers -->
+  <script src="src/controllers/neonova-admin-controller.js"></script>
+  <script src="src/controllers/neonova-admin-manager-controller.js"></script>
+  <script src="src/controllers/neonova-crypto-controller.js"></script>
+  <script src="demo/neonova-profile-registry.js"></script>
+  <script src="demo/neonova-http-controller-synthetic.js"></script>
+  <script src="demo/neonova-demo-seeder.js"></script>
+  <script src="src/controllers/neonova-progress-controller.js"></script>
+  <script src="src/controllers/neonova-collector.js"></script>
+  <script src="src/controllers/neonova-analyzer.js"></script>
+  <script src="src/controllers/neonova-passphrase-controller.js"></script>
+  <script src="src/controllers/neonova-customer-controller.js"></script>
+  <script src="src/controllers/neonova-report-order-controller.js"></script>
+  <script src="src/controllers/neonova-report-controller.js"></script>
+  <script src="src/controllers/neonova-snapshot-controller.js"></script>
+  <script src="src/controllers/neonova-tab-controller.js"></script>
+  <script src="src/controllers/neonova-add-customer-controller.js"></script>
+  <script src="src/controllers/neonova-dashboard-controller.js"></script>
+  <script src="src/controllers/neonova-notifier-controller.js"></script>
+
+  <!-- Views -->
+  <script src="src/views/base-neonova-view.js"></script>
+  <script src="src/views/neonova-base-modal-view.js"></script>
+  <script src="src/views/neonova-admin-view.js"></script>
+  <script src="src/views/neonova-admin-manager-view.js"></script>
+  <script src="src/views/neonova-inline-snapshot-view.js"></script>
+  <script src="src/views/neonova-spinner-view.js"></script>
+  <script src="src/views/neonova-passphrase-view.js"></script>
+  <script src="src/views/neonova-customer-view.js"></script>
+  <script src="src/views/neonova-tab-view.js"></script>
+  <script src="src/views/neonova-snapshot-chart.js"></script>
+  <script src="src/views/neonova-snapshot-view.js"></script>
+  <script src="src/views/neonova-report-snapshot-view.js"></script>
+  <script src="src/views/neonova-report-order-view.js"></script>
+  <script src="src/views/neonova-progress-view.js"></script>
+  <script src="src/views/neonova-report-view.js"></script>
+  <script src="src/views/neonova-add-customer-view.js"></script>
+  <script src="src/views/neonova-dashboard-view.js"></script>
+
+  <!-- Demo entry point -->
+  <script src="demo/neonova-demo-bootstrap.js"></script>
 
 </body>
 </html>
