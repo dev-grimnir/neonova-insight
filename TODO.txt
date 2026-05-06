@@ -1,1 +1,2 @@
+"account not found" badges should be addressed.
 geolocating customers and building a map of which customers are fed out of which remote.

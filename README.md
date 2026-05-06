@@ -2,7 +2,7 @@
 
 A powerful Tampermonkey userscript suite for NeoNova admins (`admin.neonova.net`). 
 
-**Real-time customer monitoring + professional stability reports** with live polling, two-click customer addition, dual stability scores, rolling 7-day charts, and exports.
+**Real-time customer monitoring + professional stability reports** with live polling, one click customer addition, and exports.
 
 Built for admins, field techs, and small ISPs who need better visibility into modem flaps, uptime, and reconnect behavior.
 
