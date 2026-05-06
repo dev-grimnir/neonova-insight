@@ -7,6 +7,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         { key: 'snapshot',     label: '24 Hr Snapshot',        width: 28, align: 'left'  },
         { key: 'action',       label: 'Action',          width: 12, align: 'right' }
         ];
+    
     constructor(controller) {
         super();
         this.controller = controller;
@@ -31,9 +32,9 @@ class NeonovaDashboardView extends BaseNeonovaView {
         const pollIcon = this.controller.model.isPollingPaused ? 'fa-play' : 'fa-pause';
         const pollText = this.controller.model.isPollingPaused ? 'Resume' : 'Pause';
         const interval = this.controller.model.pollingIntervalMinutes;
-
+    
         return `
-            <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 shrink-0 relative z-10">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 shrink-0 relative z-10 dashboard-header">
                 <div class="flex items-center gap-4">
                     <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.png" 
                          alt="Nova Subscriber" class="h-10 w-auto">
@@ -48,7 +49,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                         Admins
                     </button>
                 </div>
-
+    
                 <div class="flex items-center gap-4">
                     <!-- Polling control -->
                     <div class="relative group/polling">
@@ -58,9 +59,9 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             <span>${pollText} Polling</span>
                             <span class="text-emerald-400/80 text-sm font-mono">· ${interval} min</span>
                         </button>
-
-                        <!-- Slider tooltip (pops UP when minimized via CSS) -->
-                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 hidden group-hover/polling:block z-20 pointer-events-auto">
+    
+                        <!-- Slider tooltip: visibility/fade controlled by inline CSS in createElements(). -->
+                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full z-20">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-xs uppercase tracking-widest text-zinc-400">Polling Interval</span>
@@ -74,17 +75,17 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             <div class="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-zinc-900 border-l border-t border-zinc-700 rotate-45"></div>
                         </div>
                     </div>
-
+    
                     <!-- Last Updated – pure data from model (no calculation here) -->
                     <span id="last-updated" 
                           class="text-xs text-zinc-400 font-mono whitespace-nowrap">
                         Last Updated: <span class="text-emerald-400" id="last-updated-value">--</span>
                     </span>
-
+    
                     <button class="refresh-btn px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-
+    
                     <button id="add-customer-btn" 
                             class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         Add Customer
@@ -208,20 +209,24 @@ class NeonovaDashboardView extends BaseNeonovaView {
             const style = document.createElement('style');
             style.id = 'neonova-scroll-style';
             style.innerHTML = `
-                .neonova-privacy-mode td:nth-child(1),
-                .neonova-privacy-mode td:nth-child(2) {
-                    filter: blur(5px);
-                    transition: filter 300ms ease;
+                /* Polling tooltip — visibility, fade, and minimized-state position-flip
+                   all owned here. Does not depend on Tailwind utility classes. */
+                .poll-slider-tooltip {
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 250ms ease;
                 }
-                .neonova-privacy-mode tr:hover td:nth-child(1),
-                .neonova-privacy-mode tr:hover td:nth-child(2) {
-                    filter: blur(0);
+
+                .dashboard-header {
+                    border-top-left-radius: 24px;
+                    border-top-right-radius: 24px;
                 }
-                .neonova-scroll::-webkit-scrollbar { width: 7px; }
-                .neonova-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
-                .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
-                .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
-                .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
+                
+                .group\\/polling:hover .poll-slider-tooltip,
+                .poll-slider-tooltip:hover {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
                 .neonova-dashboard.minimized .poll-slider-tooltip {
                     top: auto !important;
                     bottom: 100% !important;
@@ -233,10 +238,31 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     bottom: -8px !important;
                     transform: rotate(225deg) !important;
                 }
-                .neonova-dashboard.minimized .group\\/polling:hover .poll-slider-tooltip,
-                .neonova-dashboard.minimized .poll-slider-tooltip:hover {
-                    display: block !important;
+                .neonova-dashboard.minimized .poll-slider-tooltip {
+                    padding-top: 0 !important;
+                    padding-bottom: 12px !important;
+                    margin-bottom: 0 !important;
                 }
+    
+                /* Privacy mode blur */
+                .neonova-privacy-mode td:nth-child(1),
+                .neonova-privacy-mode td:nth-child(2) {
+                    filter: blur(5px);
+                    transition: filter 300ms ease;
+                }
+                .neonova-privacy-mode tr:hover td:nth-child(1),
+                .neonova-privacy-mode tr:hover td:nth-child(2) {
+                    filter: blur(0);
+                }
+    
+                /* Scrollbar */
+                .neonova-scroll::-webkit-scrollbar { width: 7px; }
+                .neonova-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
+                .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
+                .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
+                .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
+    
+                /* Tabs */
                 .neonova-tab-btn {
                     padding: 6px 18px;
                     border-radius: 12px 12px 0 0;
@@ -285,6 +311,28 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     line-height: 1;
                 }
                 .neonova-tab-add:hover { color: #34d399; }
+    
+                /* Drag-and-drop reorder */
+                .neonova-tab-btn[draggable="true"] {
+                    cursor: grab;
+                }
+                .neonova-tab-btn.dragging {
+                    opacity: 0.4;
+                    transform: scale(1.02);
+                }
+                .neonova-tab-btn.drop-before::before,
+                .neonova-tab-btn.drop-after::after {
+                    content: '';
+                    position: absolute;
+                    top: 4px;
+                    bottom: 0;
+                    width: 3px;
+                    background: #34d399;
+                    border-radius: 2px;
+                    pointer-events: none;
+                }
+                .neonova-tab-btn.drop-before::before { left: -2px; }
+                .neonova-tab-btn.drop-after::after { right: -2px; }
             `;
             document.head.appendChild(style);
         }
@@ -314,7 +362,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
             this.toggleMinimize();
         };
         document.addEventListener('click', this.outsideListener);
-
+    
         window.addEventListener('resize', () => {
             if (this.isMinimized) this.applyMinimizedStyles();
         });
@@ -325,18 +373,22 @@ class NeonovaDashboardView extends BaseNeonovaView {
     renderTabBar() {
         if (!this.tabBar) return;
         this.tabBar.innerHTML = '';
-
-        for (const tab of this.controller.getTabController().tabs) {
+    
+        const tabs = this.controller.getTabController().tabs;
+    
+        tabs.forEach((tab, idx) => {
             const btn = document.createElement('button');
             btn.className = `neonova-tab-btn${tab.isActive ? ' active' : ''}`;
             btn.dataset.label = tab.label;
+            btn.dataset.index = String(idx);
+            btn.draggable = true;
             const { connected, disconnected } = tab.getConnectionCounts();
-
+    
             const bellColor = tab.isNetworkTab ? '#34d399' : '#52525b';
             const bellTitle = tab.isNetworkTab
                 ? 'Notifications ON for this tab (click to disable)'
                 : 'Notifications OFF for this tab (click to enable)';
-
+    
             btn.innerHTML = `
                 <span class="tab-bell"
                       title="${bellTitle}"
@@ -352,7 +404,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 </span>
                 <span class="tab-close" title="Close tab">&times;</span>
             `;
-
+    
             btn.querySelector('.tab-bell').addEventListener('click', async (e) => {
                 e.stopPropagation();
                 await this.controller.getTabController().toggleNetworkTab(tab.label);
@@ -362,12 +414,12 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 }
                 this.controller.getTabController().rebuildTable();
             });
-
+    
             btn.querySelector('.tab-label').addEventListener('click', () => {
                 this.controller.getTabController().switchTab(tab.label);
                 this.renderTabBar();
             });
-
+    
             btn.querySelector('.tab-close').addEventListener('click', (e) => {
                 e.stopPropagation();
                 const confirmed = confirm(`Close tab "${tab.label}"?`);
@@ -376,7 +428,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     this.renderTabBar();
                 }
             });
-
+    
             btn.querySelector('.tab-label').addEventListener('dblclick', (e) => {
                 e.stopPropagation();
                 const newLabel = prompt('Rename tab:', tab.label);
@@ -385,10 +437,52 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     this.renderTabBar();
                 }
             });
-
+    
+            // ─── Drag-and-drop reorder ───────────────────────────────
+            btn.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(idx));
+                btn.classList.add('dragging');
+            });
+    
+            btn.addEventListener('dragend', () => {
+                btn.classList.remove('dragging');
+                this.tabBar.querySelectorAll('.neonova-tab-btn').forEach(b => {
+                    b.classList.remove('drop-before', 'drop-after');
+                });
+            });
+    
+            btn.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = btn.getBoundingClientRect();
+                const isLeftHalf = e.clientX < rect.left + rect.width / 2;
+                btn.classList.toggle('drop-before', isLeftHalf);
+                btn.classList.toggle('drop-after', !isLeftHalf);
+            });
+    
+            btn.addEventListener('dragleave', () => {
+                btn.classList.remove('drop-before', 'drop-after');
+            });
+    
+            btn.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                if (Number.isNaN(fromIdx)) return;
+    
+                const rect = btn.getBoundingClientRect();
+                const isLeftHalf = e.clientX < rect.left + rect.width / 2;
+                let toIdx = idx + (isLeftHalf ? 0 : 1);
+                // Account for the index shift after splicing out fromIdx
+                if (fromIdx < toIdx) toIdx--;
+    
+                btn.classList.remove('drop-before', 'drop-after');
+                this.controller.getTabController().reorderTab(fromIdx, toIdx);
+            });
+    
             this.tabBar.appendChild(btn);
-        }
-
+        });
+    
         const addBtn = document.createElement('button');
         addBtn.className = 'neonova-tab-add';
         addBtn.title = 'Add tab';
@@ -490,6 +584,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.panel.style.borderRadius = '24px 24px 0 0';
         this.panel.style.boxShadow = '0 -12px 40px rgba(0,0,0,0.8)';
         this.panel.style.cursor = 'pointer';
+        this.panel.style.overflow = 'visible';
         this.panel.classList.add('minimized');
     }
 
@@ -502,6 +597,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.panel.style.borderRadius = '24px';
         this.panel.style.boxShadow = '0 8px 40px rgba(0,0,0,0.8)';
         this.panel.style.cursor = 'default';
+        this.panel.style.overflow = 'hidden';
         this.panel.classList.remove('minimized');
     }
 
