@@ -1,152 +1,75 @@
-# Neonova-insight Interactive UI Demo — Memory File
+# Neonova Insight Project — Session Memory
 
-## Project context
+## Project state
 - Repo: github.com/dev-grimnir/neonova-insight
+- Branches: dev (working), main (stable), demo (live demo, branched off main)
 - Workflow: branch dev → fix one discrete problem → merge to main → delete dev → re-branch
-- The demo is a separate effort, lives on its own branch off main
-- Source pull direction: main → demo, never the reverse
-- File URL pattern: https://raw.githubusercontent.com/dev-grimnir/neonova-insight/{branch}/src/[layer]/[File].js
-- README is at github.com/dev-grimnir/neonova-insight/blob/main/README.md — read this for product framing
+- Demo Pages URL: https://dev-grimnir.github.io/neonova-insight/
+- File URL pattern: https://raw.githubusercontent.com/dev-grimnir/neonova-insight/refs/heads/{branch}/{path}
 
-## Goal
-Interactive demo of the dashboard, modals, and report. Hosted on GitHub Pages. 
-No real RADIUS server contact — all customer data synthetic. UI must behave exactly as it does in production.
+## Demo phase status
+- Phase 1 (deploy pipeline): DONE
+- Phase 2 (synthetic data, encrypted localStorage round-trip, seeder): DONE
+- Phase 3 status:
+  - About-as-background: DONE (header above panel + section below, both in index.html)
+  - Account list box: DONE (demo/neonova-account-list-box.js, hooks Add Customer modal via MutationObserver)
+  - Reverse tooltips: DEFERRED pending real-user UI feedback
+  - Fake phone UI: DEFERRED until Twilio campaign approval
+  - Phase 3 functionally closed in current form
 
-## Polish target
-Portfolio-quality. User has worked on this for months and the demo must reflect that dedication. 
-NOT a quick-and-dirty showcase. Estimated effort: 2 weeks of focused work, scenario design and tooltip choreography included.
+## Recent main-branch fixes (all merged)
+- Polling tooltip: stripped Tailwind visibility classes, owns visibility/fade/position-flip via inline `<style>` block in createElements(). Class `polling-group` added to parent for `:hover` selector that doesn't depend on Tailwind escaping. Padding-based hover bridge: `padding-top: 12px` (maximized) and `padding-bottom: 12px !important` (minimized) so cursor stays in tooltip's hover region while crossing the 12px gap to the slider.
+- Minimized panel corners: `dashboard-header` class on the header div with `border-top-left-radius: 24px; border-top-right-radius: 24px;` in inline style block. Solves the conflict where `overflow: visible` on the minimized panel (needed to let tooltip escape) caused the inner header background to paint over the panel's rounded corners.
+- Tab drag-and-drop reorder: native HTML5 DnD, no library. Lifted look via opacity 0.4 + scale 1.02. Slot highlight via 3px emerald bar from ::before/::after pseudo-elements. New `reorderTab(fromIdx, toIdx)` method on tab controller persists via existing save() path.
+- Polling tooltip clipping fix: applyMinimizedStyles() sets `panel.style.overflow = 'visible'`; applyMaximizedStyles() restores `'hidden'`.
 
-## Audience
-All of: prospective employers, ISP technical peers, personal showcase. 
-Demo must work for both technical and non-technical visitors. Walkthrough/discoverability matters.
+## Known main-branch latent bugs (deferred)
+- Dashboard view hardcodes logo URL pointing at old repo name `neonova-post-processor`. GitHub redirect for raw URLs is fragile.
+- Production header layout assumes host-page CSS resets (button white-space, flex-shrink). Demo's index.html works around in inline `<style>`.
 
-## Architectural decisions made
+## Planned project rename (NOT STARTED)
+- Display: "Neonova Insight" → "Nova:Insight"
+- Repo: `neonova-insight` → `nova-insight`
+- Class prefix: `Neonova` → `NovaInsight`
+- CSS prefix: `.neonova-` → `.ni-`
+- Sequence: rename on dev → merge to main → merge main into demo → one demo follow-up commit (index.html script paths, demo/*.js, about copy) → rename GitHub repo last to avoid breaking raw URLs mid-flight
+- Logo replacement (when rename happens): SVG with text "Nova" (green #34d399) + ":Insight" (white). Optional swish above all letters with green→white gradient and star at apex.
 
-### Hosting
-- Separate branch off main (e.g., `demo` or `gh-pages`)
-- One-way sync: main → demo, refresh periodically
-- GitHub Pages serves static files
-- No build step needed — replace @require directives with `<script>` tags in index.html
-- Tailwind already CDN-loaded, fine as-is
+## Demo registry / sanitizer fix (DONE, both files shipped together)
+- Add-customer username sanitizer in src/controllers/neonova-add-customer-controller.js strips everything outside [a-zA-Z0-9.] — by design.
+- 9 demo registry usernames had underscores or hyphens; rewritten to substitute periods.
+  - chodges_mtwash → chodges.mtwash (the centerpiece outage customer)
+  - dchen_voip → dchen.voip
+  - lhanson_pgh → lhanson.pgh
+  - twatkins_rural → twatkins.rural
+  - klindstrom_42 → klindstrom.42
+  - pacific-st-node-04 → pacific.st.node.04
+  - bentleyville-tower-7 → bentleyville.tower.7
+  - macgregor-relay → macgregor.relay
+  - denverton-school-modem → denverton.school.modem
+- Matching rename shipped in demo/neonova-demo-seeder.js #SCENARIO. Both files MUST ship together.
+- Decision: do nothing about stale localStorage from returning visitors.
 
-### What gets swapped vs. preserved
-- HTTP controller: REPLACED with synthetic data generator
-- Encrypted blob persistence: REMOVED entirely (in-memory only)
-- Notifier dispatch: REPLACED with fake phone UI
-- Everything above the data layer (models, controllers, views) stays identical
-
-### Persistence: in-memory only
-Decided against keeping encryption layer in demo. Reasons:
-- Refresh wipes state, predictable for visitors
-- One visitor's actions don't pollute another's experience
-- No leftover state on shared computers
-- Lowest friction for a "look at this" demo
-
-### Customer add flow: option 4 (curated allowlist + deliberate failure affordance)
-- Synthetic backend has ~20 fictional valid usernames
-- Add Customer modal shows "Demo customers available" hint with clickable chips
-- Separate "Try entering a bad name" link below input pre-fills with unavailable name
-- Both success and failure paths discoverable, signposted in modal
-- Reverse-tooltip on the modal calls out both affordances
-
-### Walkthrough: reverse tooltips (user's idea, locked in)
-- Tooltips appear on page load, dismiss on hover over their element
-- Self-clearing UI hints — no interruption of user intent
-- Staged appearance: header tools first, tab bar second, row controls third
-- Total choreography ~4-5 seconds
-- Fire on EVERY page load, not first-time-only (visitors are usually first-time)
-- Tooltips on initially-hidden elements (modal contents, etc) appear when those elements open
-
-### SMS alert demo: fake phone UI
-- Sticky phone icon in corner of dashboard, pulses when alert fires
-- Click opens phone-shaped modal with stacked SMS bubbles
-- Pre-loaded scenario state includes one customer "currently down for hours"
-- Within seconds of demo load, threshold trips, alert fires, phone lights up
-- "Five-second wow" moment
-
-### Reports
-- Synthetic data generation deterministic per (customerId, dateRange)
-- Hash-based RNG seed — same params always yield same events
-- Progress modal stays in flow but with shorter latency (3s vs 30s)
-
-### Customer profile model
-User confirmed: weight-based, simple to author. Dimensions:
-- Reliability (avg disconnects/day) — 0.05 to 25.0
-- Outage duration distribution (skewed lognormal — short blips with rare longer outages)
-- Time-of-day weighting (residential clusters at night/weekends, commercial at business hours)
-- Current state at "now" (up, down, recently-reconnected)
-
-Profile flavors to author:
-- Stable Residential
-- Flaky Residential
-- Stable Business
-- Currently Down
-- Just Reconnected
-- Recently Replaced
-
-### Pre-loaded scenario state at demo init
-- 3 tabs minimum (Network, Customers, plus one for variety)
-- Network tab is active on load (more interesting visually)
-- 8-12 synthetic customers across tabs
-- Realistic infrastructure names (Pacific St Node 4, Bentleyville-7, MacGregor Tower)
-- Realistic-sounding subscriber names (no real people)
-- At least ONE customer in "currently down past threshold" state with disconnectedSince stamped
-- 2-3 fake admins pre-populated in admin manager
-- Network tab's down customer at top of row list
-
-## Phase plan
-
-### Phase 1 — static shell
-- Demo branch exists
-- GitHub Pages configured
-- Production JS loads on plain HTML page via <script> tags
-- No synthetic data, no functionality
-- Goal: verify deploy pipeline, no userscript wrapper
-
-### Phase 2 — synthetic data layer
-- Replace HTTP controller with synthetic generator
-- Define customer profiles
-- Pre-baked scenario state
-- Poll loop produces synthetic events live
-- Dashboard runs on synthetic data identically to production
-- No tooltips, no fake phone yet
-
-### Phase 3 — polish layer
-- Reverse tooltips with staged choreography
-- Fake phone with SMS bubbles
-- Down-customer scenario triggers visible alert within seconds
-- "About this demo" link in header
-
-### Phase 4 — documentation
-- README updates
-- Screenshots / GIFs
-- Possibly short demo video
-- Cross-links between demo and production repo
-
-## Things deliberately left flexible
-- Whether tooltips stage in or all-at-once: stage in (decided)
-- Whether reports get full progress modal or skip: full but faster (decided)
-- Whether to mock notifier with toast or fake phone: fake phone (decided)
-- Whether to keep encryption: drop it (decided)
-- Whether customers can be added with arbitrary names: no, allowlist (decided)
-- Whether per-row friendly name editing works: yes, in-memory mutation (decided)
-
-## Known scope creep risks
-- Demo will surface UI rough edges that prod hides (empty dashboard state, first-run flow, etc.)
-- These polish opportunities should feed back into prod, not balloon demo scope
-- Visitor-facing copy/microcopy will need attention that prod doesn't require
-
-## Current status
-NOT STARTED. Demo work blocked behind closing the production TODO. 
-As of last session, TODO went from 12 items to 1 (snapshot tooltip residual question or whatever's left). Once that closes, demo work can begin.
-
-## User communication notes
+## Communication notes
 - Hardware mode = design/planning, no code
 - Software mode = code generation OK
 - User holds strong MVC opinions, calls out architectural violations sharply
-- "Dev is where the work gets done and main is the stable baseline"
-- User has all @require URLs in the entry script — assistant should NOT keep asking for URLs that follow the known pattern
-- Long conversations degrade assistant accuracy — start fresh when warranted
+- "Dev is where the work gets done; main is the stable baseline."
+- DO NOT ask for files from the repo — fetch directly using the URL pattern
+- DO NOT pull `main.js` — production bootstrap is `scripts/neonova-dashboard.user.js`
+- URL fetcher constraint: only accepts URLs the user has explicitly pasted in conversation OR that appeared in search results. If a URL fetch fails, ask user to paste the raw URL.
+- Long conversations degrade assistant accuracy — start fresh between phases.
+- "Blame the cache" is a lazy diagnosis. Do not reach for it as first guess.
+- When user says "give me the methods" prefer separate code blocks per method, not one big dump.
+- When user is on dev/main/demo, REMEMBER which. Tailwind class availability differs:
+  - Demo: precompiled tailwind.css with explicit safelist. Classes not in safelist produce no CSS.
+  - Dev/main: runs as userscript on host page (admin.neonova.net). Tailwind from host or none.
+- When making CSS changes that depend on Tailwind utilities, prefer owning rules in inline `<style>` blocks rather than relying on utility classes that may or may not exist.
+
+## What this conversation built
+- Demo: about-as-background (in index.html), account list box (demo/neonova-account-list-box.js).
+- Main: tab drag-and-drop, polling tooltip rewrite (visibility/fade/position/hover-bridge), minimized panel corner fix.
+- All main-branch work merged via dev → main → delete dev → rebranch.
 
 ## Raw URLs
 https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
