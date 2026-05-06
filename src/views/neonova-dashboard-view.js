@@ -59,8 +59,8 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             <span class="text-emerald-400/80 text-sm font-mono">· ${interval} min</span>
                         </button>
     
-                        <!-- Slider tooltip: opacity-based fade, repositions above button when minimized via injected CSS -->
-                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 opacity-0 pointer-events-none group-hover/polling:opacity-100 group-hover/polling:pointer-events-auto z-20 transition-opacity duration-200">
+                        <!-- Slider tooltip: visibility/fade controlled by inline CSS in createElements(). -->
+                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 z-20">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-xs uppercase tracking-widest text-zinc-400">Polling Interval</span>
@@ -208,6 +208,31 @@ class NeonovaDashboardView extends BaseNeonovaView {
             const style = document.createElement('style');
             style.id = 'neonova-scroll-style';
             style.innerHTML = `
+                /* Polling tooltip — visibility, fade, and minimized-state position-flip
+                   all owned here. Does not depend on Tailwind utility classes. */
+                .poll-slider-tooltip {
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 250ms ease;
+                }
+                .group\\/polling:hover .poll-slider-tooltip,
+                .poll-slider-tooltip:hover {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+                .neonova-dashboard.minimized .poll-slider-tooltip {
+                    top: auto !important;
+                    bottom: 100% !important;
+                    margin-top: 0 !important;
+                    margin-bottom: 12px !important;
+                }
+                .neonova-dashboard.minimized .poll-slider-tooltip > div:last-child {
+                    top: auto !important;
+                    bottom: -8px !important;
+                    transform: rotate(225deg) !important;
+                }
+    
+                /* Privacy mode blur */
                 .neonova-privacy-mode td:nth-child(1),
                 .neonova-privacy-mode td:nth-child(2) {
                     filter: blur(5px);
@@ -217,35 +242,13 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 .neonova-privacy-mode tr:hover td:nth-child(2) {
                     filter: blur(0);
                 }
+    
+                /* Scrollbar */
                 .neonova-scroll::-webkit-scrollbar { width: 7px; }
                 .neonova-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 9999px; }
                 .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
                 .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
                 .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
-    
-                /* Polling tooltip can escape the header strip's bounds */
-                .neonova-dashboard #header-container .group\\/polling {
-                    overflow: visible !important;
-                }
-    
-                /* Polling tooltip flips to render ABOVE the button when minimized,
-                   so it isn't clipped by the bottom edge of the short minimized panel. */
-                .neonova-dashboard.minimized .poll-slider-tooltip {
-                    top: auto !important;
-                    bottom: 100% !important;
-                    margin-top: 0 !important;
-                    margin-bottom: 12px !important;
-                }
-                
-                .neonova-dashboard.minimized .poll-slider-tooltip > div:last-child {
-                    top: auto !important;
-                    bottom: -8px !important;
-                    transform: rotate(225deg) !important;
-                }
-                
-                .poll-slider-tooltip {
-                        transition: opacity 250ms ease !important;
-                    }
     
                 /* Tabs */
                 .neonova-tab-btn {
