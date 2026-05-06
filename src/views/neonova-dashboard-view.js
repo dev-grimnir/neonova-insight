@@ -31,7 +31,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         const pollIcon = this.controller.model.isPollingPaused ? 'fa-play' : 'fa-pause';
         const pollText = this.controller.model.isPollingPaused ? 'Resume' : 'Pause';
         const interval = this.controller.model.pollingIntervalMinutes;
-
+    
         return `
             <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 shrink-0 relative z-10">
                 <div class="flex items-center gap-4">
@@ -48,7 +48,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                         Admins
                     </button>
                 </div>
-
+    
                 <div class="flex items-center gap-4">
                     <!-- Polling control -->
                     <div class="relative group/polling">
@@ -58,8 +58,8 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             <span>${pollText} Polling</span>
                             <span class="text-emerald-400/80 text-sm font-mono">· ${interval} min</span>
                         </button>
-
-                        <!-- Slider tooltip (pops UP when minimized via CSS) -->
+    
+                        <!-- Slider tooltip: opacity-based fade, repositions above button when minimized via injected CSS -->
                         <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 opacity-0 pointer-events-none group-hover/polling:opacity-100 group-hover/polling:pointer-events-auto z-20 transition-opacity duration-200">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
                                 <div class="flex items-center justify-between mb-2">
@@ -74,17 +74,17 @@ class NeonovaDashboardView extends BaseNeonovaView {
                             <div class="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-zinc-900 border-l border-t border-zinc-700 rotate-45"></div>
                         </div>
                     </div>
-
+    
                     <!-- Last Updated – pure data from model (no calculation here) -->
                     <span id="last-updated" 
                           class="text-xs text-zinc-400 font-mono whitespace-nowrap">
                         Last Updated: <span class="text-emerald-400" id="last-updated-value">--</span>
                     </span>
-
+    
                     <button class="refresh-btn px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-
+    
                     <button id="add-customer-btn" 
                             class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
                         Add Customer
@@ -222,6 +222,14 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 .neonova-scroll::-webkit-scrollbar-thumb { background: #34d399; border-radius: 9999px; border: 2px solid #18181b; }
                 .neonova-scroll::-webkit-scrollbar-thumb:hover { background: #10b981; }
                 .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
+    
+                /* Polling tooltip can escape the header strip's bounds */
+                .neonova-dashboard #header-container .group\\/polling {
+                    overflow: visible !important;
+                }
+    
+                /* Polling tooltip flips to render ABOVE the button when minimized,
+                   so it isn't clipped by the bottom edge of the short minimized panel. */
                 .neonova-dashboard.minimized .poll-slider-tooltip {
                     top: auto !important;
                     bottom: 100% !important;
@@ -233,28 +241,8 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     bottom: -8px !important;
                     transform: rotate(225deg) !important;
                 }
-
-                .neonova-tab-btn[draggable="true"] {
-                    cursor: grab;
-                }
-                .neonova-tab-btn.dragging {
-                    opacity: 0.4;
-                    transform: scale(1.02);
-                }
-                .neonova-tab-btn.drop-before::before,
-                .neonova-tab-btn.drop-after::after {
-                    content: '';
-                    position: absolute;
-                    top: 4px;
-                    bottom: 0;
-                    width: 3px;
-                    background: #34d399;
-                    border-radius: 2px;
-                    pointer-events: none;
-                }
-                .neonova-tab-btn.drop-before::before { left: -2px; }
-                .neonova-tab-btn.drop-after::after { right: -2px; }
-
+    
+                /* Tabs */
                 .neonova-tab-btn {
                     padding: 6px 18px;
                     border-radius: 12px 12px 0 0;
@@ -303,6 +291,28 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     line-height: 1;
                 }
                 .neonova-tab-add:hover { color: #34d399; }
+    
+                /* Drag-and-drop reorder */
+                .neonova-tab-btn[draggable="true"] {
+                    cursor: grab;
+                }
+                .neonova-tab-btn.dragging {
+                    opacity: 0.4;
+                    transform: scale(1.02);
+                }
+                .neonova-tab-btn.drop-before::before,
+                .neonova-tab-btn.drop-after::after {
+                    content: '';
+                    position: absolute;
+                    top: 4px;
+                    bottom: 0;
+                    width: 3px;
+                    background: #34d399;
+                    border-radius: 2px;
+                    pointer-events: none;
+                }
+                .neonova-tab-btn.drop-before::before { left: -2px; }
+                .neonova-tab-btn.drop-after::after { right: -2px; }
             `;
             document.head.appendChild(style);
         }
@@ -332,7 +342,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
             this.toggleMinimize();
         };
         document.addEventListener('click', this.outsideListener);
-
+    
         window.addEventListener('resize', () => {
             if (this.isMinimized) this.applyMinimizedStyles();
         });
