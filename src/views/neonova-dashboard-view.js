@@ -60,7 +60,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                         </button>
 
                         <!-- Slider tooltip (pops UP when minimized via CSS) -->
-                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 hidden group-hover/polling:block z-20 pointer-events-auto">
+                        <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full mt-3 opacity-0 pointer-events-none group-hover/polling:opacity-100 group-hover/polling:pointer-events-auto z-20 transition-opacity duration-200">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-xs uppercase tracking-widest text-zinc-400">Polling Interval</span>
