@@ -216,7 +216,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     transition: opacity 250ms ease;
                 }
 
-                
+                .dashboard-header {
+                    border-top-left-radius: 24px;
+                    border-top-right-radius: 24px;
+                }
                 
                 .group\\/polling:hover .poll-slider-tooltip,
                 .poll-slider-tooltip:hover {
