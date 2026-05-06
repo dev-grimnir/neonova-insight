@@ -3,6 +3,7 @@ class NeonovaTabController {
     constructor(dashboardController) {
         this.dashboardController = dashboardController;
         this.tabs = [];
+        this.dragInProgress = false;
     }
 
     async reorderTab(fromIdx, toIdx) {
@@ -27,19 +28,31 @@ class NeonovaTabController {
     }
     
     rebuildTable() {
+        if (this.dragInProgress) return;
+    
         const activeTab = this.getActiveTab();
         if (!activeTab) return;
-        
+    
+        const ordered = this.#getDisplayOrder(activeTab);
         const rows = [];
-        for (const ctrl of this.getActiveTab().customers) {
+        for (const ctrl of ordered) {
             ctrl.view.update();
             const row = ctrl.getRowElement();
-            if (row) rows.push(row);
+            if (row instanceof HTMLElement) rows.push(row);
         }
     
-        rows.sort((a, b) => {
-            const aStatus = a.querySelector('td:nth-child(3)')?.textContent.trim() || '';
-            const bStatus = b.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+        this.view.setRows(rows);
+        this.dashboardController.view.renderTabBar();
+    }
+
+    #getDisplayOrder(tab) {
+        if (tab.manualOrder) {
+            return [...tab.customers];
+        }
+    
+        return [...tab.customers].sort((a, b) => {
+            const aStatus = a.model?.status || '';
+            const bStatus = b.model?.status || '';
     
             const aDisconnected = aStatus !== 'Connected' && aStatus !== 'Connecting...';
             const bDisconnected = bStatus !== 'Connected' && bStatus !== 'Connecting...';
@@ -49,18 +62,11 @@ class NeonovaTabController {
             }
     
             if (!aDisconnected) {
-                const aDurationCell = a.querySelector('td:nth-child(4)')?.textContent.trim() || '';
-                const bDurationCell = b.querySelector('td:nth-child(4)')?.textContent.trim() || '';
-                const aSeconds = this.#parseDurationToSeconds(aDurationCell) || 0;
-                const bSeconds = this.#parseDurationToSeconds(bDurationCell) || 0;
-                return aSeconds - bSeconds;
+                return (a.model?.durationSec || 0) - (b.model?.durationSec || 0);
             }
     
             return 0;
         });
-    
-        this.view.setRows(rows);
-        this.dashboardController.view.renderTabBar();
     }
     
     async add(radiusUsername, friendlyName) {
@@ -117,7 +123,7 @@ class NeonovaTabController {
         this.rebuildTable();
         this.dashboardController.view.updateHeader();
     }
-
+    /*
     #parseDurationToSeconds(durationStr) {
         if (!durationStr || durationStr === '—' || durationStr.includes('<1min')) {
             return 30;  // treat <1min as ~30s so very new sessions sort near top
@@ -138,7 +144,7 @@ class NeonovaTabController {
     
         return totalSeconds || 0;
     }
-        
+    */    
     //methods for tab controller
     initDefaultTab() {
         const defaultTab = new NeonovaTabModel('All', true);
@@ -307,7 +313,7 @@ class NeonovaTabController {
             this.initDefaultTab();
         }
     }
-
+    /*
     async #migrateFromLegacy() {
         const legacy = localStorage.getItem('novaDashboardCustomers');
         if (!legacy) {
@@ -329,5 +335,87 @@ class NeonovaTabController {
             console.error('[NeonovaTabController.migrateFromLegacy]', e);
             this.initDefaultTab();
         }
+    }
+    */
+
+    // ====================== DRAG-AND-DROP ======================
+    beginDrag() {
+        this.dragInProgress = true;
+    }
+
+    // Called from the view's dragend. Drop handlers (reorderCustomer,
+    // moveCustomerToTab) clear the flag themselves, so this mostly handles
+    // the abort case (drag started but no drop fired).
+    endDrag() {
+        if (!this.dragInProgress) return;
+        this.dragInProgress = false;
+        this.dashboardController.view.renderTabBar();
+    }
+
+    // Within-tab reorder. Indices are in display space (what the user sees).
+    async reorderCustomer(fromDisplayIdx, toDisplayIdx) {
+        this.dragInProgress = false;
+    
+        const tab = this.getActiveTab();
+        if (!tab) return;
+        if (fromDisplayIdx === toDisplayIdx) return;
+    
+        const order = this.#getDisplayOrder(tab);
+        if (fromDisplayIdx < 0 || fromDisplayIdx >= order.length) return;
+        if (toDisplayIdx < 0 || toDisplayIdx > order.length) return;
+    
+        const [moved] = order.splice(fromDisplayIdx, 1);
+        // toDisplayIdx is the slot index *before* the splice. Adjust if the
+        // destination was past the source, since splicing shifted things left.
+        const insertAt = toDisplayIdx > fromDisplayIdx ? toDisplayIdx - 1 : toDisplayIdx;
+        order.splice(insertAt, 0, moved);
+    
+        tab.setCustomerOrder(order);
+        tab.manualOrder = true;
+    
+        await this.save();
+        this.rebuildTable();
+    }
+
+    // Cross-tab move. Customer goes to the END of the destination tab's
+    // customers array. Mode on either tab is unchanged.
+    async moveCustomerToTab(radiusUsername, targetLabel) {
+        this.dragInProgress = false;
+    
+        const sourceTab = this.tabs.find(t =>
+            t.customers.some(c => c.radiusUsername === radiusUsername)
+        );
+        if (!sourceTab) return;
+    
+        const targetTab = this.tabs.find(t => t.label === targetLabel);
+        if (!targetTab) return;
+        if (sourceTab === targetTab) return;
+    
+        const ctrl = sourceTab.customers.find(c => c.radiusUsername === radiusUsername);
+        if (!ctrl) return;
+    
+        sourceTab.removeCustomer(radiusUsername);
+        targetTab.addCustomer(ctrl);
+    
+        await this.save();
+        this.rebuildTable();
+    }
+
+    // Toggle a tab's sort mode. Freezes current display order on auto→manual
+    // so rows don't snap on the transition.
+    async toggleTabMode(label) {
+        const tab = this.tabs.find(t => t.label === label);
+        if (!tab) return;
+    
+        if (tab.manualOrder) {
+            tab.manualOrder = false;
+        } else {
+            const sortedOrder = this.#getDisplayOrder(tab);
+            tab.setCustomerOrder(sortedOrder);
+            tab.manualOrder = true;
+        }
+    
+        await this.save();
+        this.rebuildTable();
     }
 }
