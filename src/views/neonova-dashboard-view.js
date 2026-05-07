@@ -54,8 +54,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 : 'sort-glyph';
     
             return `<th class="px-6 py-2 text-${c.align}">
-                <span class="${glyphClasses}" data-column="${c.key}" title="Sort by ${c.label}">${glyph}</span>
-                <span class="column-label">${c.label}</span>
+                <span class="th-content">
+                    <span class="${glyphClasses}" data-column="${c.key}" title="Sort by ${c.label}">${glyph}</span>
+                    <span class="column-label">${c.label}</span>
+                </span>
             </th>`;
         }).join('');
     
@@ -313,6 +315,16 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 .neonova-scroll { scrollbar-width: thin; scrollbar-color: #34d399 #18181b; }
     
                 /* Tabs */
+                .sort-glyph {
+                    display: inline-block;
+                    color: #52525b;
+                    cursor: pointer;
+                    user-select: none;
+                    transition: color 150ms;
+                    font-size: 12px;
+                    line-height: 1;
+                    flex-shrink: 0;
+                }
                 .neonova-tab-btn {
                     padding: 6px 18px;
                     border-radius: 12px 12px 0 0;
