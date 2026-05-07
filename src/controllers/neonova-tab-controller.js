@@ -381,9 +381,7 @@ class NeonovaTabController {
     async moveCustomerToTab(radiusUsername, targetLabel) {
         this.dragInProgress = false;
     
-        const sourceTab = this.tabs.find(t =>
-            t.customers.some(c => c.radiusUsername === radiusUsername)
-        );
+        const sourceTab = this.getActiveTab();
         if (!sourceTab) return;
     
         const targetTab = this.tabs.find(t => t.label === targetLabel);
@@ -392,7 +390,7 @@ class NeonovaTabController {
     
         const ctrl = sourceTab.customers.find(c => c.radiusUsername === radiusUsername);
         if (!ctrl) return;
-
+    
         // Duplicate check — target tab can't already have this customer
         if (targetTab.customers.some(c => c.radiusUsername === radiusUsername)) {
             const label = ctrl.friendlyName || ctrl.radiusUsername;
