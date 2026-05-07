@@ -127,7 +127,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 <div id="content-area" class="flex-1 overflow-hidden flex flex-col">
     
                     <!-- Tab bar -->
-                    <div id="tab-bar" class="flex items-center gap-2 px-6 pt-3 pb-0 border-b border-zinc-800 bg-zinc-900 shrink-0"></div>
+                    <div id="tab-bar" class="flex items-center gap-2 px-6 pt-3 pb-0 bg-zinc-900 shrink-0" style="border-bottom: 1px solid #34d399;"></div>
     
                     <!-- Card -->
                     <div class="flex-1 bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden flex flex-col">
@@ -268,7 +268,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     border-radius: 12px 12px 0 0;
                     font-size: 13px;
                     font-weight: 500;
-                    border: 1px solid transparent;
+                    border: 1px solid #34d399;
                     border-bottom: none;
                     cursor: pointer;
                     transition: background 200ms, color 200ms;
@@ -280,24 +280,19 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     background: #27272a;
                     color: #e4e4e7;
                 }
-                .neonova-tab-btn {
-                    border: 1px solid #3f3f46;
-                    border-bottom: none;
-                }
                 .neonova-tab-btn.active {
-                    background: #18181b;
-                    color: #34d399;
-                    border-color: #3f3f46;
+                    background: #047857;
+                    color: #ffffff;
+                    border-color: #34d399;
                 }
                 .neonova-tab-btn .tab-close {
                     margin-left: 8px;
-                    opacity: 0;
-                    font-size: 11px;
-                    color: #71717a;
-                    transition: opacity 150ms;
+                    font-size: 14px;
+                    color: #ffffff;
+                    transition: color 150ms;
                 }
-                .neonova-tab-btn:hover .tab-close {
-                    opacity: 1;
+                .neonova-tab-btn .tab-close:hover {
+                    color: #ef4444;
                 }
                 .neonova-tab-add {
                     padding: 4px 10px;
