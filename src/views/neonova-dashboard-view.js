@@ -269,6 +269,10 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     transition: opacity 250ms ease;
                 }
 
+                .neonova-dashboard thead th {
+                    vertical-align: bottom;
+                }
+
                 .th-content {
                    display: inline-flex;
                    align-items: baseline;
