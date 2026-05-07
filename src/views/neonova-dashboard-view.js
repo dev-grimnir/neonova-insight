@@ -269,6 +269,12 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     transition: opacity 250ms ease;
                 }
 
+                .th-content {
+                   display: inline-flex;
+                   align-items: baseline;
+                   gap: 6px;
+               }
+
                 .dashboard-header {
                     border-top-left-radius: 24px;
                     border-top-right-radius: 24px;
@@ -369,17 +375,6 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 }
                 .neonova-tab-add:hover { color: #34d399; }
 
-                /* Column sort glyphs */
-                .sort-glyph {
-                    display: inline-block;
-                    margin-right: 6px;
-                    color: #52525b;
-                    cursor: pointer;
-                    user-select: none;
-                    transition: color 150ms;
-                    font-size: 12px;
-                    line-height: 1;
-                }
                 .sort-glyph:hover {
                     color: #34d399;
                 }
