@@ -15,6 +15,21 @@ class NeonovaDashboardView extends BaseNeonovaView {
         this.createElements();
     }
 
+    #attachSortGlyphListener() {
+        if (!this.contentArea) return;
+        this.contentArea.addEventListener('click', (e) => {
+            const glyph = e.target.closest('.sort-glyph');
+            if (!glyph) return;
+            e.stopPropagation();
+            const columnKey = glyph.dataset.column;
+            if (!columnKey) return;
+            const tabCtrl = this.controller.getTabController();
+            const activeTab = tabCtrl?.getActiveTab();
+            if (!activeTab) return;
+            tabCtrl.sortByColumn(activeTab.label, columnKey);
+        });
+    }
+
     static buildColGroupHTML() {
         return '<colgroup>' +
             NeonovaDashboardView.COLUMNS.map(c => `<col style="width: ${c.width}%;">`).join('') +
@@ -119,7 +134,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         const tabCtrl = this.controller.getTabController();
         const activeTab = tabCtrl?.getActiveTab() || null;
     
-        const oldThead = this.panel.querySelector('#header-container ~ #content-area thead, #content-area thead');
+        const oldThead = this.panel.querySelector('#content-area thead');
         if (!oldThead) return;
     
         const temp = document.createElement('table');
@@ -128,15 +143,6 @@ class NeonovaDashboardView extends BaseNeonovaView {
         if (!newThead) return;
     
         oldThead.replaceWith(newThead);
-    
-        newThead.querySelectorAll('.sort-glyph').forEach(glyph => {
-            glyph.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const columnKey = glyph.dataset.column;
-                if (!columnKey || !activeTab) return;
-                tabCtrl.sortByColumn(activeTab.label, columnKey);
-            });
-        });
     }
 
     createElements() {
@@ -428,6 +434,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         }
     
         this.attachHeaderListeners();
+        this.#attachSortGlyphListener();
         this.renderTabBar();
     
         this.panel.addEventListener('click', (e) => {
