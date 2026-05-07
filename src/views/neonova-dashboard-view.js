@@ -21,10 +21,29 @@ class NeonovaDashboardView extends BaseNeonovaView {
             '</colgroup>';
     }
 
-    static buildTheadHTML() {
-        const ths = NeonovaDashboardView.COLUMNS
-            .map(c => `<th class="px-6 py-2 text-${c.align}">${c.label}</th>`)
-            .join('');
+    static buildTheadHTML(activeTab = null) {
+        const SORTABLE = new Set(['friendlyName', 'radiusUser', 'status', 'duration']);
+    
+        const ths = NeonovaDashboardView.COLUMNS.map(c => {
+            if (!SORTABLE.has(c.key)) {
+                return `<th class="px-6 py-2 text-${c.align}">${c.label}</th>`;
+            }
+    
+            let glyph = '⇅';
+            if (activeTab && activeTab.sortColumn === c.key) {
+                glyph = activeTab.sortDirection === 'desc' ? '↓' : '↑';
+            }
+    
+            const glyphClasses = (activeTab && activeTab.sortColumn === c.key)
+                ? 'sort-glyph sort-glyph-active'
+                : 'sort-glyph';
+    
+            return `<th class="px-6 py-2 text-${c.align}">
+                <span class="${glyphClasses}" data-column="${c.key}" title="Sort by ${c.label}">${glyph}</span>
+                <span class="column-label">${c.label}</span>
+            </th>`;
+        }).join('');
+    
         return `<thead><tr class="text-xs uppercase tracking-widest text-zinc-500">${ths}</tr></thead>`;
     }
 
@@ -95,6 +114,31 @@ class NeonovaDashboardView extends BaseNeonovaView {
         `;
     }
 
+    renderTableHeader() {
+        if (!this.panel) return;
+        const tabCtrl = this.controller.getTabController();
+        const activeTab = tabCtrl?.getActiveTab() || null;
+    
+        const oldThead = this.panel.querySelector('#header-container ~ #content-area thead, #content-area thead');
+        if (!oldThead) return;
+    
+        const temp = document.createElement('table');
+        temp.innerHTML = NeonovaDashboardView.buildTheadHTML(activeTab);
+        const newThead = temp.querySelector('thead');
+        if (!newThead) return;
+    
+        oldThead.replaceWith(newThead);
+    
+        newThead.querySelectorAll('.sort-glyph').forEach(glyph => {
+            glyph.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const columnKey = glyph.dataset.column;
+                if (!columnKey || !activeTab) return;
+                tabCtrl.sortByColumn(activeTab.label, columnKey);
+            });
+        });
+    }
+
     createElements() {
         this.panel = document.createElement('div');
         this.panel.classList.add('neonova-dashboard');
@@ -135,7 +179,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                         <div class="px-6 py-1 bg-zinc-900 border-b border-zinc-800">
                             <table class="w-full table-fixed">
                                 ${NeonovaDashboardView.buildColGroupHTML()}
-                                ${NeonovaDashboardView.buildTheadHTML()}
+                                ${NeonovaDashboardView.buildTheadHTML(this.controller.getTabController().getActiveTab())}
                             </table>
                         </div>
                         
@@ -306,6 +350,27 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     line-height: 1;
                 }
                 .neonova-tab-add:hover { color: #34d399; }
+
+                /* Column sort glyphs */
+                .sort-glyph {
+                    display: inline-block;
+                    margin-right: 6px;
+                    color: #52525b;
+                    cursor: pointer;
+                    user-select: none;
+                    transition: color 150ms;
+                    font-size: 12px;
+                    line-height: 1;
+                }
+                .sort-glyph:hover {
+                    color: #34d399;
+                }
+                .sort-glyph-active {
+                    color: #34d399;
+                }
+                .column-label {
+                    user-select: none;
+                }
     
                 /* Drag-and-drop reorder */
                 .neonova-tab-btn[draggable="true"] {
