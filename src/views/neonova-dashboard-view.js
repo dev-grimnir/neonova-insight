@@ -41,7 +41,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
     
         const ths = NeonovaDashboardView.COLUMNS.map(c => {
             if (!SORTABLE.has(c.key)) {
-                return `<th class="px-6 py-2 text-${c.align}">${c.label}</th>`;
+                return `<th class="px-2 py-2 text-${c.align}">${c.label}</th>`;
             }
     
             let glyph = '⇅';
@@ -53,7 +53,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                 ? 'sort-glyph sort-glyph-active'
                 : 'sort-glyph';
     
-            return `<th class="px-6 py-2 text-${c.align}">
+            return `<th class="px-2 py-2 text-${c.align}">
                 <span class="th-content">
                     <span class="${glyphClasses}" data-column="${c.key}" title="Sort by ${c.label}">${glyph}</span>
                     <span class="column-label">${c.label}</span>
