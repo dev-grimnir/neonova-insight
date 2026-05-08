@@ -797,11 +797,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
         const enabled = this.controller.model.settings.privacyEnabled;
         
         if (enabled) {
-            btn.textContent = 'Privacy On';
+            btn.textContent = 'Disable Privacy';
             btn.className = 'px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-700 shadow-sm';
             btn.title = 'Privacy ON — names blurred';
         } else {
-            btn.textContent = 'Privacy Off';
+            btn.textContent = 'Enable Privacy';
             btn.className = 'px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-600 shadow-sm';
             btn.title = 'Privacy OFF — names visible';
         }
