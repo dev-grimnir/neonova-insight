@@ -75,12 +75,12 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     <img src="https://raw.githubusercontent.com/dev-grimnir/neonova-post-processor/main/src/assets/nova-subscriber-logo.png" 
                          alt="Nova Subscriber" class="h-10 w-auto">
                     <button id="privacy-toggle-btn" 
-                            class="px-6 py-2.5 font-medium rounded-2xl flex items-center justify-center transition-all border shadow-sm"
+                            class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm"
                             title="Toggle Privacy Mode">
-                        Privacy Off
+                        Enable Privacy
                     </button>
                     <button id="admins-btn"
-                            class="px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-600 shadow-sm"
+                            class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm"
                             title="Manage Admins">
                         Admins
                     </button>
@@ -90,12 +90,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
                     <!-- Polling control -->
                     <div class="relative group/polling">
                         <button id="poll-toggle-btn" 
-                                class="min-w-[180px] px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl flex items-center justify-center gap-2.5 transition-all border border-zinc-700">
-                            <i class="fas ${pollIcon} text-emerald-400"></i>
+                                class="min-w-[180px] px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm">
+                            <i class="fas ${pollIcon} text-white"></i>
                             <span>${pollText} Polling</span>
-                            <span class="text-emerald-400/80 text-sm font-mono">· ${interval} min</span>
+                            <span class="text-white/70 text-sm font-mono">· ${interval} min</span>
                         </button>
-    
                         <!-- Slider tooltip: visibility/fade controlled by inline CSS in createElements(). -->
                         <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full z-20">
                             <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-80">
@@ -118,12 +117,11 @@ class NeonovaDashboardView extends BaseNeonovaView {
                         Last Updated: <span class="text-emerald-400" id="last-updated-value">--</span>
                     </span>
     
-                    <button class="refresh-btn px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
+                    <button class="refresh-btn px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-    
                     <button id="add-customer-btn" 
-                            class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-medium rounded-2xl flex items-center gap-2 transition shadow-sm">
+                            class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm">
                         Add Customer
                     </button>
                 </div>
@@ -796,14 +794,14 @@ class NeonovaDashboardView extends BaseNeonovaView {
         if (!btn) return;
         const enabled = this.controller.model.settings.privacyEnabled;
         
+        btn.className = 'px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm';
+        
         if (enabled) {
             btn.textContent = 'Disable Privacy';
-            btn.className = 'px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-700 shadow-sm';
-            btn.title = 'Privacy ON — names blurred';
+            btn.title = 'Privacy ON — click to disable';
         } else {
             btn.textContent = 'Enable Privacy';
-            btn.className = 'px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-2xl flex items-center justify-center transition-all border border-zinc-600 shadow-sm';
-            btn.title = 'Privacy OFF — names visible';
+            btn.title = 'Privacy OFF — click to enable';
         }
     }
     
