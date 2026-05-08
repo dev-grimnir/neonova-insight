@@ -794,7 +794,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
         if (!btn) return;
         const enabled = this.controller.model.settings.privacyEnabled;
         
-        btn.className = 'px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm';
+        btn.className = 'whitespace-nowrap px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm';
         
         if (enabled) {
             btn.textContent = 'Disable Privacy';
