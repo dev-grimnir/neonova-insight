@@ -93,7 +93,7 @@ class NeonovaDashboardView extends BaseNeonovaView {
                                 class="min-w-[180px] whitespace-nowrap px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/40 shadow-sm">
                             <i class="fas ${pollIcon} text-white"></i>
                             <span>${pollText} Polling</span>
-                            <span class="text-white/70 text-sm font-mono">· ${interval} min</span>
+                            <span class="text-white/70 font-mono">· ${interval} min</span>
                         </button>
                         <!-- Slider tooltip: visibility/fade controlled by inline CSS in createElements(). -->
                         <div class="poll-slider-tooltip absolute left-1/2 -translate-x-1/2 top-full z-20">
