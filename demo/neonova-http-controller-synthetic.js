@@ -312,7 +312,6 @@ class NeonovaHTTPController {
      * Returns the stream array, or null if the username isn't in the registry.
      */
     static #ensureStream(username) {
-
         const hadEntry = this.#streams.has(username);
         const cachedValue = hadEntry ? this.#streams.get(username) : '<<no entry>>';
         const profile = NeonovaProfileRegistry.get(username);
