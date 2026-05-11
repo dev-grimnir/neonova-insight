@@ -301,6 +301,21 @@ class NeonovaHTTPController {
             }
         }
 
+        // Dashboard invariant: every valid customer must have at least one event
+        // in the visible past so status can be determined on first poll. RNG can
+        // legitimately produce empty streams (very low disconnect rates) or
+        // future-only streams (all sampled events landed after demoEpoch). Floor
+        // the result so seeded customers always render a real status.
+        const nowMs = Date.now();
+        const hasPastEvent = events.some(e => e.dateObj.getTime() <= nowMs);
+        if (!hasPastEvent) {
+            // Anchor a Start event 7-14 days before demoEpoch. Deterministic via
+            // the same rng, so the same username always gets the same anchor.
+            const anchorAgeMs = (7 + rng() * 7) * 24 * 3600 * 1000;
+            const anchorMs = epoch.getTime() - anchorAgeMs;
+            events.push({ dateObj: new Date(anchorMs), status: 'Start' });
+        }
+        
         // Sort chronologically and decorate each event with the production
         // shape (timestamp string + sessionTime placeholder).
         events.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
