@@ -1,8 +1,7 @@
 class NeonovaCustomerController {
-    #model;
     constructor(dashboardController, radiusUsername = null, friendlyName = null, model = null) {
         this.dashboardController = dashboardController;
-        this.#model = model || new NeonovaCustomerModel(
+        this.model = model || new NeonovaCustomerModel(
             (radiusUsername || '').trim(),
             friendlyName
         );
@@ -10,11 +9,11 @@ class NeonovaCustomerController {
     }
 
     get radiusUsername() {
-        return this.#model.radiusUsername;
+        return this.model.radiusUsername;
     }
 
     get friendlyName() {
-        return this.#model.friendlyName;
+        return this.model.friendlyName;
     }
 
     updateFromPoll() { /* no-op */ }
@@ -24,15 +23,15 @@ class NeonovaCustomerController {
     }
 
     launchReport() {
-        const username = this.#model.radiusUsername;
-        const friendlyName = this.#model.friendlyName || username;
+        const username = this.model.radiusUsername;
+        const friendlyName = this.model.friendlyName || username;
         console.log('[launchReport] Starting for:', username, friendlyName);
         new NeonovaReportOrderController(username, friendlyName);
     }
 
     open24HourSnapshot() {
-        const username = this.#model.radiusUsername;
-        const friendlyName = this.#model.friendlyName || username;
+        const username = this.model.radiusUsername;
+        const friendlyName = this.model.friendlyName || username;
     
         const endDate = new Date();
         const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
@@ -43,8 +42,8 @@ class NeonovaCustomerController {
     }
 
     open3DaySnapshot() {
-        const username = this.#model.radiusUsername;
-        const friendlyName = this.#model.friendlyName || username;
+        const username = this.model.radiusUsername;
+        const friendlyName = this.model.friendlyName || username;
 
         const endDate = new Date();
         const startDate = new Date();
@@ -57,7 +56,7 @@ class NeonovaCustomerController {
     async updateFriendlyName(newName) {
         const trimmed = newName.trim();
         if (trimmed === '') return false;
-        this.#model.friendlyName = trimmed;
+        this.model.friendlyName = trimmed;
 
         this.dashboardController.model.addOrUpdateCustomer({
             radiusUsername: this.radiusUsername,
@@ -70,7 +69,7 @@ class NeonovaCustomerController {
     }
 
     async toggleAlertsSuppressed() {
-        this.#model.toggleAlertsSuppressed();
+        this.model.toggleAlertsSuppressed();
         await this.dashboardController.getTabController().save();
         this.view.update();
     }
