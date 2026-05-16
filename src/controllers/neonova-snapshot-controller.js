@@ -34,11 +34,23 @@ class NeonovaSnapshotController {
      * injects a boundary event at startDate, so dead space at the window's
      * left edge is handled even without pre-window context.
      */
-    static buildFromEvents(username, friendlyName, events, startDate, endDate) {
+    static async buildData(username, friendlyName, startDate, endDate) {
         try {
+            const raw = await NeonovaHTTPController.paginateReportLogs(
+                username, startDate, endDate
+            );
+            const cleanResult = NeonovaCollector.cleanEntries(raw);
+            const cleaned = Array.isArray(cleanResult)
+                ? cleanResult
+                : (cleanResult?.cleanedEntries || []);
+    
+            // Defensive filter — paginateReportLogs's silent shour/smin defaults
+            // can widen the fetched window beyond what the caller requested.
+            // Both buildData and buildFromEvents must hand the analyzer events
+            // that match the [startDate, endDate] it's told to analyze.
             const startMs = startDate.getTime();
             const endMs   = endDate.getTime();
-            const inWindow = (events || []).filter(e => {
+            const inWindow = cleaned.filter(e => {
                 const t = e.dateObj && e.dateObj.getTime();
                 return t != null && t >= startMs && t <= endMs;
             });
@@ -57,7 +69,7 @@ class NeonovaSnapshotController {
                 entries
             );
         } catch (err) {
-            console.error('NeonovaSnapshotController.buildFromEvents failed', err);
+            console.error('NeonovaSnapshotController.buildData failed', err);
             return null;
         }
     }
