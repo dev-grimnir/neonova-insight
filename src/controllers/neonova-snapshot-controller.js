@@ -15,7 +15,6 @@
  *   seedHistory(model) -> void  (used by inline callers)
  */
 class NeonovaSnapshotController {
-
     constructor(username, friendlyName, startDate = null, endDate = null) {
         this.username = username;
         this.friendlyName = friendlyName || username;
@@ -26,6 +25,40 @@ class NeonovaSnapshotController {
         // (report view embedding) should use NeonovaSnapshotController.createHeadless().
         if (startDate && endDate) {
             this.#loadAndShow(startDate, endDate);
+        }
+    }
+
+        /**
+     * Analyze-only: build a model from an already-fetched events array,
+     * filtered to the requested sub-window. The analyzer's leadTime logic
+     * injects a boundary event at startDate, so dead space at the window's
+     * left edge is handled even without pre-window context.
+     */
+    static buildFromEvents(username, friendlyName, events, startDate, endDate) {
+        try {
+            const startMs = startDate.getTime();
+            const endMs   = endDate.getTime();
+            const inWindow = (events || []).filter(e => {
+                const t = e.dateObj && e.dateObj.getTime();
+                return t != null && t >= startMs && t <= endMs;
+            });
+    
+            const metrics = NeonovaAnalyzer.computeMetrics(inWindow, startDate, endDate);
+            if (!metrics) return null;
+            const entriesResult = NeonovaAnalyzer.getEntries(inWindow, startDate);
+            const entries = entriesResult?.entries || inWindow;
+    
+            return new NeonovaSnapshotModel(
+                username,
+                friendlyName || username,
+                startDate,
+                endDate,
+                metrics,
+                entries
+            );
+        } catch (err) {
+            console.error('NeonovaSnapshotController.buildFromEvents failed', err);
+            return null;
         }
     }
 
@@ -42,9 +75,10 @@ class NeonovaSnapshotController {
      * ============================================================ */
 
     /**
-     * Fetch → clean → compute → return NeonovaSnapshotModel.
-     * Used by both the modal flow and any inline caller that wants a
-     * snapshot model for a specific range without owning the pipeline.
+     * Analyze-only: build a model from an already-fetched events array,
+     * filtered to the requested sub-window. The analyzer's leadTime logic
+     * injects a boundary event at startDate, so dead space at the window's
+     * left edge is handled even without pre-window context.
      */
     static async buildData(username, friendlyName, startDate, endDate) {
         try {
@@ -55,11 +89,23 @@ class NeonovaSnapshotController {
             const cleaned = Array.isArray(cleanResult)
                 ? cleanResult
                 : (cleanResult?.cleanedEntries || []);
-            const metrics = NeonovaAnalyzer.computeMetrics(cleanResult, startDate, endDate);
+    
+            // Defensive filter — paginateReportLogs's silent shour/smin defaults
+            // can widen the fetched window beyond what the caller requested.
+            // Both buildData and buildFromEvents must hand the analyzer events
+            // that match the [startDate, endDate] it's told to analyze.
+            const startMs = startDate.getTime();
+            const endMs   = endDate.getTime();
+            const inWindow = cleaned.filter(e => {
+                const t = e.dateObj && e.dateObj.getTime();
+                return t != null && t >= startMs && t <= endMs;
+            });
+    
+            const metrics = NeonovaAnalyzer.computeMetrics(inWindow, startDate, endDate);
             if (!metrics) return null;
-            const entriesResult = NeonovaAnalyzer.getEntries(cleanResult, startDate);
-            const entries = entriesResult?.entries || cleaned;
-
+            const entriesResult = NeonovaAnalyzer.getEntries(inWindow, startDate);
+            const entries = entriesResult?.entries || inWindow;
+    
             return new NeonovaSnapshotModel(
                 username,
                 friendlyName || username,
@@ -102,12 +148,15 @@ class NeonovaSnapshotController {
      * ============================================================ */
 
     /**
-     * Push current onto history, fetch new range, return new model.
-     * Caller (view) re-renders with the returned model. Null on failure.
+     * Drill into a sub-range of the current model's data. Pure transform —
+     * no HTTP. Pushes the new model onto history. Null on failure.
      */
     async drillTo(startDate, endDate) {
-        const model = await NeonovaSnapshotController.buildData(
-            this.username, this.friendlyName, startDate, endDate
+        const parent = this.historyStack[this.historyStack.length - 1];
+        if (!parent) return null;
+    
+        const model = NeonovaSnapshotController.buildFromEvents(
+            this.username, this.friendlyName, parent.events, startDate, endDate
         );
         if (!model) return null;
         this.historyStack.push(model);

@@ -394,6 +394,9 @@ class NeonovaSnapshotChart {
                 } else {
                     drillStart = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 0, 0, 0, 0);
                     drillEnd   = new Date(clicked.getFullYear(), clicked.getMonth(), clicked.getDate(), 23, 59, 59, 999);
+                    if (drillStart.getTime() < startTime) drillStart = new Date(startTime);
+                    const upperMs = Math.min(endTime, Date.now());
+                    if (drillEnd.getTime() > upperMs) drillEnd = new Date(upperMs);
                 }
 
                 onRangeClick(drillStart, drillEnd);
