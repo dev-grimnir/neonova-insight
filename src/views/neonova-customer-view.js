@@ -135,7 +135,7 @@ class NeonovaCustomerView extends BaseNeonovaView {
             </td>
             <td class="px-2 py-1 text-sm text-gray-300">${durationStr}</td>
             <td class="px-2 py-1 snapshot-cell" style="vertical-align: middle;">
-                <div class="snapshot-host" style="width: 100%; height: 20px;"></div>
+                <div class="snapshot-host" style="width: 100%; height: 20px; cursor: pointer;" title="Click to view 24 hour snapshot"></div>
             </td>
             <td class="px-2 py-1 text-right whitespace-nowrap">
                 ${bellHtml}
@@ -156,6 +156,13 @@ class NeonovaCustomerView extends BaseNeonovaView {
                 e.preventDefault();
                 e.stopPropagation();
                 this.#controller.toggleAlertsSuppressed();
+                return;
+            }
+
+            if (e.target.closest('.snapshot-host')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.#controller.open24HourSnapshot();
                 return;
             }
 
